@@ -1,0 +1,7 @@
+build/
+
+aspl
+
+*.exe
+
+*.spl
