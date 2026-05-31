@@ -81,7 +81,7 @@ static struct Expr *parse_primary(struct Parser *parser) {
     exit(1);
 }
 
-static struct Expr *create_binary_op(struct Parser *parser, struct Expr *left,
+static struct Expr *create_binary_op(struct Expr *left,
                                      struct Expr *right, enum BinOpType op) {
     struct Expr *expr = malloc(sizeof(struct Expr));
     expr->type = EX_BINARY;
@@ -98,9 +98,9 @@ static struct Expr *parse_factor(struct Parser *parser) {
         enum TokenType type = advance(parser).type;
         struct Expr *right = parse_primary(parser);
         if (type == TK_STAR) {
-            left = create_binary_op(parser, left, right, BIN_MUL);
+            left = create_binary_op(left, right, BIN_MUL);
         } else {
-            left = create_binary_op(parser, left, right, BIN_DIV);
+            left = create_binary_op(left, right, BIN_DIV);
         }
     }
     return left;
@@ -112,9 +112,9 @@ static struct Expr *parse_term(struct Parser *parser) {
         enum TokenType type = advance(parser).type;
         struct Expr *right = parse_factor(parser);
         if (type == TK_PLUS) {
-            left = create_binary_op(parser, left, right, BIN_ADD);
+            left = create_binary_op(left, right, BIN_ADD);
         } else {
-            left = create_binary_op(parser, left, right, BIN_SUB);
+            left = create_binary_op(left, right, BIN_SUB);
         }
     }
     return left;
