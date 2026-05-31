@@ -4,10 +4,12 @@
 #include <stdlib.h>
 
 #include "../lexer/lexer.h"
+#include "../lexer/token.h"
 #include "ast.h"
 
 struct Parser {
     struct Lexer *lexer;
+    struct Token next;
 };
 
 void parser_init(struct Parser *parser, const char *source, size_t source_len);
