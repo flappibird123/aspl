@@ -12,6 +12,7 @@ static struct Expr *parse_expression(struct Parser *parser);
 void parser_init(struct Parser *parser, const char *source, size_t source_len) {
     struct Lexer *lexer = malloc(sizeof(struct Lexer));
     lexer_init(lexer, source, source_len);
+    parser->lexer = lexer;
     parser->next = lexer_next(parser->lexer);
 }
 
