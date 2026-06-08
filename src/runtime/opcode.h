@@ -7,6 +7,8 @@ enum OpCode {
     OP_IMUL = 2,
     OP_IDIV = 3,
     OP_LOADCONST = 4,
+    OP_HALT = 5,
+    OP_IPRINT = 6,
 };
 
 #endif // RUNTIME_OPCODE_H

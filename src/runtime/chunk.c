@@ -32,15 +32,6 @@ void bytecodearray_push(struct BytecodeArray *bytecodearray, Byte value) {
     bytecodearray->size++;
 }
 
-Byte bytecodearray_get(struct BytecodeArray *bytecodearray, size_t index) {
-    if (index >= bytecodearray->size) {
-        eprintf("access bytecodearray out of bounds. ");
-        eprintf("access at index %zu, but size is %zu", index, bytecodearray->size);
-        exit(1);
-    }
-    return bytecodearray->data[index];
-}
-
 void bytecodearray_free(struct BytecodeArray *bytecodearray) {
     free(bytecodearray->data);
     bytecodearray->data = NULL;
@@ -48,8 +39,9 @@ void bytecodearray_free(struct BytecodeArray *bytecodearray) {
     bytecodearray->capacity = 0;
 }
 
-void chunk_init(struct Chunk *chunk) {
-
+void chunk_init(struct Chunk *chunk, struct BytecodeArray* bytecode, struct ValueArray* constants) {
+    chunk->bytecode = *bytecode;
+    chunk->constants = *constants;
 }
 
 void chunk_free(struct Chunk *chunk) {

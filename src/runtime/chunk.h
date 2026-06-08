@@ -16,7 +16,6 @@ struct BytecodeArray {
 
 void bytecodearray_init(struct BytecodeArray *bytecodearray);
 void bytecodearray_push(struct BytecodeArray *bytecodearray, Byte value);
-Byte bytecodearray_get(struct BytecodeArray *bytecodearray, size_t index);
 void bytecodearray_free(struct BytecodeArray *bytecodearray);
 
 struct Chunk {
@@ -24,7 +23,7 @@ struct Chunk {
     struct ValueArray constants;
 };
 
-void chunk_init(struct Chunk *chunk);
+void chunk_init(struct Chunk *chunk, struct BytecodeArray* bytecode, struct ValueArray* constants);
 void chunk_free(struct Chunk *chunk);
 
 #endif // RUNTIME_CHUNK_H

@@ -33,14 +33,6 @@ void valuearray_push(struct ValueArray *arr, Value value) {
     arr->size++;
 }
 
-void valuearray_get(struct ValueArray *arr, size_t index) {
-    if (index >= arr->size) {
-        eprintf("valuearray access out of bounds at index %zu when max size %zu\n", index, arr->size);
-        exit(1);
-    }
-    return arr->data[index];
-}
-
 void valuearray_free(struct ValueArray *arr) {
     free(arr->data);
     arr->data = NULL;
