@@ -14,6 +14,8 @@ enum TokenType {
     TK_STAR,
     TK_SLASH,
 
+    TK_PRINT,
+
     TK_EOF
 };
 

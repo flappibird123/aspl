@@ -7,7 +7,7 @@
 #include "runtime/vm.h"
 #include "runtime/chunk.h"
 #include "runtime/value.h"
-
+#include "frontend/lexer/lexer.h"
 
 int main(int argc, const char *argv[]) {
     if (argc != 2) {
@@ -18,6 +18,14 @@ int main(int argc, const char *argv[]) {
 
     size_t size;
     char *source = read_file(argv[1], &size);
+
+    struct Lexer lexer;
+    lexer_init(&lexer, source, size);
+    while (1) {
+        lexer_next(&lexer);
+    } 
+    lexer_free(&lexer);
+    return 1;
 
     struct VM vm;
     vm_init(&vm);
