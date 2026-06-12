@@ -3,17 +3,16 @@
 #include <stdlib.h>
 #include <stddef.h>
 
-void free_ast(struct Expr *ast) {
-    if (ast == NULL) {
-        return;
-    }
+void free_ast(struct Stmt *ast) {
+    if (!ast) return;
+
     switch (ast->type) {
-        case EX_BINARY:
-            free_ast(ast->value.binop.left);
-            free_ast(ast->value.binop.right);
+        case STMT_STMTEXPR:
+        case STMT_PRINT:
+            free_expr(ast->value.exprstmt.expr);
             break;
 
-        case EX_INT_LITERAL:
+        default:
             break;
     }
 

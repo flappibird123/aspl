@@ -13,7 +13,7 @@ struct Parser {
 };
 
 void parser_init(struct Parser *parser, const char *source, size_t source_len);
-struct Expr *parser_parse(struct Parser *parser);
+struct Stmt *parser_parse(struct Parser *parser);
 void parser_free(struct Parser *parser);
 
 #endif // FRONTEND_PARSER_PARSER_H

@@ -142,6 +142,9 @@ struct Token lexer_next(struct Lexer *lexer) {
     case '/':
         advance(lexer);
         return gen_token(lexer, TK_SLASH);
+    case ';':
+        advance(lexer);
+        return gen_token(lexer, TK_SEMICOLON);
     default:
         if (isdigit((unsigned char)c)) {
             advance(lexer);

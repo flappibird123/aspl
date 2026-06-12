@@ -16,6 +16,8 @@ enum TokenType {
 
     TK_PRINT,
 
+    TK_SEMICOLON,
+
     TK_EOF
 };
 

@@ -1,7 +1,6 @@
 #include "parser.h"
 #include "ast.h"
 
-#include <assert.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,6 +9,10 @@
 static struct Expr *parse_expression(struct Parser *parser);
 
 void parser_init(struct Parser *parser, const char *source, size_t source_len) {
+    if (parser && parser->lexer) {
+        lexer_free(parser->lexer);
+        free(parser->lexer);
+    }
     struct Lexer *lexer = malloc(sizeof(struct Lexer));
     lexer_init(lexer, source, source_len);
     parser->lexer = lexer;
@@ -28,11 +31,8 @@ static struct Expr *create_integer_literal(struct Parser *parser, struct Token t
     struct Expr *expr = malloc(sizeof(struct Expr));
     expr->type = EX_INT_LITERAL;
     char *strnum = malloc(tok.length + 1);
-    strncpy(strnum, parser->lexer->source + tok.offest,
-            tok.length);
+    memcpy(strnum, parser->lexer->source + tok.offest, tok.length); 
     strnum[tok.length] = '\0';
-
-    assert(tok.length == strlen(strnum));
 
     char *end;
     long value = strtol(strnum, &end, 10);
@@ -78,7 +78,6 @@ static struct Expr *parse_primary(struct Parser *parser) {
         error("unexpected token\n");
         exit(1);
     }
-    exit(1);
 }
 
 static struct Expr *create_binary_op(struct Expr *left,
@@ -90,6 +89,20 @@ static struct Expr *create_binary_op(struct Expr *left,
     expr->value.binop.right = right;
 
     return expr;
+}
+
+static struct Stmt *create_exprstmt(struct Expr *expr) {
+    struct Stmt *stmt = malloc(sizeof(struct Stmt));
+    stmt->type = STMT_STMTEXPR;
+    stmt->value.exprstmt.expr = expr;
+    return stmt;
+}
+
+static struct Stmt *create_printstmt(struct Expr *expr) {
+    struct Stmt *stmt = malloc(sizeof(struct Stmt));
+    stmt->type = STMT_PRINT;
+    stmt->value.exprstmt.expr = expr;
+    return stmt;
 }
 
 static struct Expr *parse_factor(struct Parser *parser) {
@@ -115,7 +128,7 @@ static struct Expr *parse_term(struct Parser *parser) {
             left = create_binary_op(left, right, BIN_ADD);
         } else {
             left = create_binary_op(left, right, BIN_SUB);
-        }
+        } 
     }
     return left;
 }
@@ -124,13 +137,29 @@ static struct Expr *parse_expression(struct Parser *parser) {
     return parse_term(parser);
 }
 
-struct Expr *parser_parse(struct Parser *parser) {
-    struct Expr *expr = parse_expression(parser);
+static struct Stmt *parse_stmt(struct Parser *parser) {
+    switch (peek(parser).type) {
+        case TK_PRINT:
+            advance(parser);
+            return create_printstmt(parse_expression(parser));
+
+        case TK_INTEGERLITERAL:
+        case TK_OPENPAREN:
+            return create_exprstmt(parse_expression(parser));
+
+        default:
+            error("unexpected token at statement start");
+            exit(1);
+    }
+}
+
+struct Stmt *parser_parse(struct Parser *parser) {
+    struct Stmt *stmt = parse_stmt(parser);
     if (peek(parser).type != TK_EOF) {
         error("unexpected trailing tokens\n");
         exit(1);
     }
-    return expr;
+    return stmt;
 }
 
 void parser_free(struct Parser *parser) {
