@@ -1,5 +1,8 @@
 #include "lexer.h"
+
 #include "token.h"
+#include "str/str_intern.h"
+#include "io/ioutils.h"
 
 #include <ctype.h>
 #include <stdbool.h>
@@ -7,6 +10,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+const char *KW_print;
+
+
 
 void lexer_init(struct Lexer *lexer, const char *source, size_t source_len) {
     lexer->source = source;
@@ -16,6 +23,12 @@ void lexer_init(struct Lexer *lexer, const char *source, size_t source_len) {
     lexer->start_column = 0;
     lexer->line = 0;
     lexer->source_len = source_len;
+
+    // internalize keywords on init
+    #ifndef HAS_INTERNALIZED_KEYWORDS
+        KW_print = str_intern("print");
+        #define HAS_INTERNALIZED_KEYWORDS = 1;
+    #endif  
 }
 
 #define EOF_CHAR '\0'
@@ -129,6 +142,9 @@ struct Token lexer_next(struct Lexer *lexer) {
     case '/':
         advance(lexer);
         return gen_token(lexer, TK_SLASH);
+    case ';':
+        advance(lexer);
+        return gen_token(lexer, TK_SEMICOLON);
     default:
         if (isdigit((unsigned char)c)) {
             advance(lexer);
@@ -136,6 +152,23 @@ struct Token lexer_next(struct Lexer *lexer) {
                 advance(lexer);
             }
             return gen_token(lexer, TK_INTEGERLITERAL);
+        } else if (isalpha((unsigned char)c) || c == '_') {
+            advance(lexer);
+            while (isalnum((unsigned char)peek(lexer)) || peek(lexer) == '_') {
+                advance(lexer);
+            }
+            size_t length = lexer->current - lexer->start;
+            char *slice = malloc(length + 1);
+            strncpy(slice, lexer->source + lexer->start, length);
+            const char *s = str_intern(slice);
+            free(slice);
+            if (s == KW_print) {
+                printf("generated print token\n");
+                return gen_token(lexer, TK_PRINT);
+            } else {
+                eprintf("TODO: INDENTIFIERS YET TO BE IMPLEMENTED\n"); 
+                exit(1);
+            }
         } else {
             fprintf(stderr, "Unknown character: '%c'\n", c);
             exit(1);

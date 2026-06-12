@@ -3,17 +3,36 @@
 #include <stdlib.h>
 #include <stddef.h>
 
-void free_ast(struct Expr *ast) {
-    if (ast == NULL) {
-        return;
-    }
-    switch (ast->type) {
-        case EX_BINARY:
-            free_ast(ast->value.binop.left);
-            free_ast(ast->value.binop.right);
+static void free_expr(struct Expr *expr) {
+    if (!expr) return;
+
+    switch (expr->type) {
+        case EX_INT_LITERAL:
+            // nothing else allocated inside
             break;
 
-        case EX_INT_LITERAL:
+        case EX_BINARY:
+            free_expr(expr->value.binop.left);
+            free_expr(expr->value.binop.right);
+            break;
+
+        default:
+            break;
+    }
+
+    free(expr);
+}
+
+void free_ast(struct Stmt *ast) {
+    if (!ast) return;
+
+    switch (ast->type) {
+        case STMT_STMTEXPR:
+        case STMT_PRINT:
+            free_expr(ast->value.exprstmt.expr);
+            break;
+
+        default:
             break;
     }
 

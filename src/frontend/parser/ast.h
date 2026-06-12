@@ -16,7 +16,7 @@ enum BinOpType {
 };
 
 struct BinaryOp {
-    enum BinOpType op;
+    enum BinOpType op; 
     struct Expr* left;
     struct Expr* right;
 };
@@ -33,7 +33,28 @@ struct Expr {
     } value;
 };
 
-void free_ast(struct Expr *ast);
+enum StmtType {
+    STMT_PRINT,
+    STMT_STMTEXPR,
+};
+
+struct ExprStmt {
+    struct Expr *expr;
+};
+
+struct PrintStmt {
+    struct Expr *expr;
+};
+struct Stmt {
+    enum StmtType type;
+
+    union {
+        struct ExprStmt exprstmt;
+        struct PrintStmt printstmt;
+    } value;
+};
+
+void free_ast(struct Stmt *ast);
 
 #endif // FRONTEND_PARSER_AST_H
 
