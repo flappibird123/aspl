@@ -1,4 +1,4 @@
-#include "ast.h"
+#include "frontend/parser/ast.h"
 
 #include <stdlib.h>
 #include <stddef.h>

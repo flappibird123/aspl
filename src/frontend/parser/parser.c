@@ -1,5 +1,6 @@
-#include "parser.h"
-#include "ast.h"
+#include "frontend/parser/parser.h"
+
+#include "frontend/parser/ast.h"
 
 #include <stdarg.h>
 #include <stdio.h>

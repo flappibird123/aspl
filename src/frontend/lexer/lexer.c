@@ -1,6 +1,6 @@
-#include "lexer.h"
+#include "frontend/lexer/lexer.h"
 
-#include "token.h"
+#include "frontend/lexer/token.h"
 #include "str/str_intern.h"
 #include "io/ioutils.h"
 

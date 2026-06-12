@@ -1,11 +1,11 @@
-#include "vm.h"
+#include "runtime/vm.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
 
 #include "io/ioutils.h"
-#include "opcode.h"
+#include "runtime/opcode.h"
 
 void vm_init(struct VM* vm) {
     (void)vm;

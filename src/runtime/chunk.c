@@ -1,4 +1,4 @@
-#include "chunk.h"
+#include "runtime/chunk.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -45,6 +45,6 @@ void chunk_init(struct Chunk *chunk, struct BytecodeArray* bytecode, struct Valu
 }
 
 void chunk_free(struct Chunk *chunk) {
-
+    (void)chunk;
 }
 
