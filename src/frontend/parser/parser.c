@@ -139,13 +139,28 @@ static struct Expr *parse_expression(struct Parser *parser) {
 
 static struct Stmt *parse_stmt(struct Parser *parser) {
     switch (peek(parser).type) {
-        case TK_PRINT:
+        case TK_PRINT: {
             advance(parser);
-            return create_printstmt(parse_expression(parser));
-
+            struct Stmt *stmt = create_printstmt(parse_expression(parser));
+            if (peek(parser).type != TK_SEMICOLON) {
+                error("expected ';' at %zu:%zu\n", peek(parser).column,
+                  peek(parser).line);
+                exit(1);
+            }
+            advance(parser);
+            return stmt;
+        }    
         case TK_INTEGERLITERAL:
-        case TK_OPENPAREN:
-            return create_exprstmt(parse_expression(parser));
+        case TK_OPENPAREN: {
+            struct Stmt *stmt = create_exprstmt(parse_expression(parser));
+            if (peek(parser).type != TK_SEMICOLON) {
+                error("expected ';' at %zu:%zu\n", peek(parser).column,
+                  peek(parser).line);
+                exit(1);
+            }
+            advance(parser);
+            return stmt;
+        }
         default:
             error("unexpected token at statement start");
             exit(1);
