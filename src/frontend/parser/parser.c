@@ -146,7 +146,6 @@ static struct Stmt *parse_stmt(struct Parser *parser) {
         case TK_INTEGERLITERAL:
         case TK_OPENPAREN:
             return create_exprstmt(parse_expression(parser));
-
         default:
             error("unexpected token at statement start");
             exit(1);
