@@ -15,7 +15,7 @@ OBJS := $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(SRCS))
 DEPS := $(OBJS:.o=.d)
 
 # ===== Flags =====
-CFLAGS := -Wall -Wextra  $(STD) -I$(SRC_DIR) -Isrc/ -Iinclude/
+CFLAGS := -Wall -Wextra  $(STD) -I$(SRC_DIR) -Isrc/ -Iinclude/ 
 DEPFLAGS := -MMD -MP
 
 # ===== Default target =====
