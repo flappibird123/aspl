@@ -1,6 +1,11 @@
 #ifndef FRONTEND_PARSER_AST_H
 #define FRONTEND_PARSER_AST_H
 
+struct NodeMetadata {
+    size_t line;
+    size_t column;
+};
+
 struct Expr;
 
 enum ExprType {
@@ -31,6 +36,8 @@ struct Expr {
         struct BinaryOp binop;
         struct IntegerLit intliteral;
     } value;
+
+    struct NodeMetadata metadata;
 };
 
 enum StmtType {
@@ -52,6 +59,8 @@ struct Stmt {
         struct ExprStmt exprstmt;
         struct PrintStmt printstmt;
     } value;
+
+    struct NodeMetadata metadata;
 };
 
 void free_ast(struct Stmt *ast);
