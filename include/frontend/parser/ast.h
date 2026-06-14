@@ -46,10 +46,25 @@ struct Expr {
 enum StmtType {
     STMT_PRINT,
     STMT_STMTEXPR,
+    STMT_VARDECL,
 };
 
 struct ExprStmt {
     struct Expr *expr;
+};
+
+enum TypeKind {
+    TYPE_INT,
+};
+
+struct Type {
+    enum TypeKind kind;
+};
+
+struct VarDecl {
+    const char *name;
+    struct Type *type;
+    struct Expr *init;
 };
 
 struct PrintStmt {
@@ -61,6 +76,7 @@ struct Stmt {
     union {
         struct ExprStmt exprstmt;
         struct PrintStmt printstmt;
+        struct VarDecl variabledecl;
     } value;
 
     struct NodeMetadata metadata;
