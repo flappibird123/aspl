@@ -16,7 +16,7 @@ struct BytecodeArray {
 };
 
 void bytecodearray_init(struct BytecodeArray *bytecodearray);
-void bytecodearray_write(struct BytecodeArray *bytecodearray, Byte value);
+void bytecodearray_write(struct BytecodeArray *bytecodearray, Byte value, size_t line);
 void bytecodearray_free(struct BytecodeArray *bytecodearray);
 
 struct Chunk {
@@ -28,6 +28,7 @@ void chunk_init(struct Chunk *chunk);
 void chunk_free(struct Chunk *chunk);
 
 void chunk_write(struct Chunk *chunk, Byte value, size_t line);
+void chunk_addconstant(struct Chunk *chunk, Value value);
 
 
 #endif // RUNTIME_CHUNK_H

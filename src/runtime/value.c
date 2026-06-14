@@ -16,7 +16,7 @@ void valuearray_init(struct ValueArray *arr) {
     }
 }
 
-void valuearray_push(struct ValueArray *arr, Value value) {
+void valuearray_write(struct ValueArray *arr, Value value) {
     if (arr->size >= arr->capacity) {
         size_t new_cap = arr->capacity * 2;
         Value *tmp = arr->data;
