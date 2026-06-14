@@ -73,7 +73,22 @@ static struct Expr *parse_primary(struct Parser *parser) {
         
         
         return expr;
-    } else {
+    } else if (peek(parser).type == TK_IDENTIFIER) {
+        struct Token tok = advance(parser);
+
+        struct Expr *expr = malloc(sizeof(struct Expr));
+        expr->type = EX_VARIABLE;
+
+        expr->value.variable.name = malloc(tok.length + 1);
+        memcpy(expr->value.variable.name,
+            parser->lexer->source + tok.offest,
+            tok.length);
+        expr->value.variable.name[tok.length] = '\0';
+
+        expr->metadata.line = tok.line;
+        expr->metadata.column = tok.column;
+        return expr;
+    }else {
         error("unexpected token\n");
         exit(1);
     }

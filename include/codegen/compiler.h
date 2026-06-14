@@ -4,8 +4,14 @@
 #include "frontend/parser/ast.h"
 #include "runtime/chunk.h"
 
-struct Compiler {
+struct Symbol {
+    const char *name;
+    Byte slot;
+};
 
+struct Compiler {
+    struct Symbol locals[256];
+    int local_count;
 };
 
 void compiler_init(struct Compiler *compiler);

@@ -14,6 +14,7 @@ struct Expr;
 enum ExprType {
     EX_BINARY,
     EX_INT_LITERAL,
+    EX_VARIABLE
 };
 
 enum BinOpType {
@@ -33,11 +34,16 @@ struct IntegerLit {
     long value;
 };
 
+struct Variable {
+    char *name;
+};
+
 struct Expr {
     enum ExprType type;
     union {
         struct BinaryOp binop;
         struct IntegerLit intliteral;
+        struct Variable variable;
     } value;
 
     struct NodeMetadata metadata;

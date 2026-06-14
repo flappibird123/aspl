@@ -1,6 +1,10 @@
 #include "codegen/compiler.h"
 
 #include "runtime/opcode.h"
+#include "io/ioutils.h"
+
+#include <string.h>
+#include <stdlib.h>
 
 static void compile_expr(struct Compiler *compiler, struct Expr *expr, struct Chunk *chunk);
 
@@ -10,6 +14,21 @@ void compiler_init(struct Compiler *compiler) {
 
 static void emit_byte(struct Chunk *chunk, Byte byte, struct NodeMetadata metadata) {
     chunk_write(chunk, byte, metadata.line);
+}
+
+static Byte add_local(struct Compiler *compiler, const char *name) {
+    int slot = compiler->local_count++;
+    compiler->locals[slot].name = name;
+    compiler->locals[slot].slot = slot;
+    return slot;
+}
+
+static Byte find_local(struct Compiler *compiler, const char *name) {
+    for (int i = 0; i < compiler->local_count; i++) {
+        if (strcmp(compiler->locals[i].name, name) == 0)
+            return compiler->locals[i].slot;
+    }
+    return -1; // not found
 }
 
 static void compile_literal(Value v, struct Chunk *chunk, struct NodeMetadata metadata) {
@@ -49,7 +68,18 @@ static void compile_expr(struct Compiler *compiler, struct Expr *expr, struct Ch
         case EX_BINARY:
             compile_binary(compiler, expr, chunk);
             break;
+        case EX_VARIABLE: {
+            int slot = find_local(compiler, expr->value.variable.name);
 
+            if (slot < 0) {
+                eprintf("undefined variable: %s\n", expr->value.variable.name);
+                exit(1);
+            }
+
+            emit_byte(chunk, OP_LOADLOCAL, expr->metadata);
+            emit_byte(chunk, slot, expr->metadata);
+            break;
+        }
         default:
             // handle error or unreachable
             break;
@@ -66,10 +96,22 @@ static void compile_stmt(struct Compiler *compiler, struct Stmt *stmt, struct Ch
         case STMT_STMTEXPR:
             compile_expr(compiler, stmt->value.exprstmt.expr, chunk);
             break;
+        case STMT_VARDECL: {
+            int slot = add_local(compiler, stmt->value.variabledecl.name);
+            if (stmt->value.variabledecl.init != NULL) {
+                compile_expr(compiler, stmt->value.variabledecl.init, chunk);
+            } else {
+                emit_byte(chunk, OP_LOADCONST, stmt->metadata);
+                emit_byte(chunk, 0, stmt->metadata); // default value
+            }
+
+            emit_byte(chunk, OP_STORELOCAL, stmt->metadata);
+            emit_byte(chunk, slot, stmt->metadata);
+            break;
+        }
     }
 }
 
-#include <stdio.h> 
 
 void compiler_compile(struct Compiler *compiler, struct Program *program, struct Chunk *chunk) {
     for (size_t i = 0; i < program->size; i++) {
