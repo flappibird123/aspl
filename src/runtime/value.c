@@ -20,7 +20,7 @@ void valuearray_write(struct ValueArray *arr, Value value) {
     if (arr->size >= arr->capacity) {
         size_t new_cap = arr->capacity * 2;
         Value *tmp = arr->data;
-        arr->data = realloc(arr->data, new_cap);
+        arr->data = realloc(arr->data, new_cap * sizeof(Value));
         if (!arr->data) {
             free(tmp);
             eprintf("memory allocation failure\n");
