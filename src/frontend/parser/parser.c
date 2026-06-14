@@ -159,8 +159,8 @@ static struct Stmt *parse_stmt(struct Parser *parser) {
             struct Expr *expr = parse_expression(parser);
             struct Stmt *stmt = create_printstmt(expr, start);
             if (peek(parser).type != TK_SEMICOLON) {
-                error("expected ';' at %zu:%zu\n", peek(parser).column,
-                  peek(parser).line);
+                error("expected ';' at %zu:%zu\n", peek(parser).line,
+                  peek(parser).column);
                 exit(1);
             }
             advance(parser);
