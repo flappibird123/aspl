@@ -89,7 +89,7 @@ static bool skip_whitespace(struct Lexer *lexer) {
 // TODO: Add support for block comments i.e. /* */
 static bool skip_comment(struct Lexer *lexer) {
     bool modified = false;
-    if (peek(lexer) == '/' && peekn(lexer, 1) == '\n') {
+    if (peek(lexer) == '/' && peekn(lexer, 1) == '/') {
         advance(lexer);
         advance(lexer);
         modified = true;
