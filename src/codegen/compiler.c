@@ -9,7 +9,7 @@
 static void compile_expr(struct Compiler *compiler, struct Expr *expr, struct Chunk *chunk);
 
 void compiler_init(struct Compiler *compiler) {
-    (void)compiler;
+    compiler->local_count = 0;
 }
 
 static void emit_byte(struct Chunk *chunk, Byte byte, struct NodeMetadata metadata) {
