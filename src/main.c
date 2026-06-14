@@ -27,27 +27,6 @@ int main(int argc, const char *argv[]) {
     lexer_free(&lexer);
     return 1;
 
-    struct VM vm;
-    vm_init(&vm);
-    struct Chunk chunk;
-    struct BytecodeArray bytecode;
-    bytecodearray_init(&bytecode);
-    bytecodearray_push(&bytecode, 4);
-    bytecodearray_push(&bytecode, 0);
-    bytecodearray_push(&bytecode, 4);
-    bytecodearray_push(&bytecode, 1);
-    bytecodearray_push(&bytecode, 1);
-    bytecodearray_push(&bytecode, 6);
-    bytecodearray_push(&bytecode, 5);
-    struct ValueArray constants;
-    valuearray_init(&constants);
-    valuearray_push(&constants, 6);
-    valuearray_push(&constants, 2);
-    chunk_init(&chunk, &bytecode, &constants);
-    vm_run(&vm, &chunk);
-
-    bytecodearray_free(&bytecode);
-    valuearray_free(&constants);
 
 
     return 0;
