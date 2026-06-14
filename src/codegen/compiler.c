@@ -77,6 +77,7 @@ void compiler_compile(struct Compiler *compiler, struct Program *ast, struct Chu
     while (i < ast->size) {
         compile_stmt(compiler, current, chunk);
         current = ast->stmts[i];
+        ++i;
     }
 
     emit_byte(chunk, OP_HALT, (struct NodeMetadata) {0});

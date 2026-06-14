@@ -21,7 +21,7 @@ int main(int argc, const char *argv[]) {
     size_t size;
     char *source = read_file(argv[1], &size);
 
-    struct Parser parser;
+    struct Parser parser = {0};
     parser_init(&parser, source, size);
     struct Program *program = parser_parse(&parser);
     parser_free(&parser);

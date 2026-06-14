@@ -1,6 +1,7 @@
 #include "frontend/parser/parser.h"
 
 #include "frontend/parser/ast.h"
+#include "io/ioutils.h"
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -10,13 +11,14 @@
 static struct Expr *parse_expression(struct Parser *parser);
 
 void parser_init(struct Parser *parser, const char *source, size_t source_len) {
-    if (parser && parser->lexer) {
+    parser->lexer = NULL;
+    if (parser->lexer != NULL) {
         lexer_free(parser->lexer);
         free(parser->lexer);
     }
-    struct Lexer *lexer = malloc(sizeof(struct Lexer));
-    lexer_init(lexer, source, source_len);
-    parser->lexer = lexer;
+
+    parser->lexer = malloc(sizeof(struct Lexer));
+    lexer_init(parser->lexer, source, source_len);
     parser->next = lexer_next(parser->lexer);
 }
 
@@ -191,8 +193,13 @@ struct Program *parser_parse(struct Parser *parser) {
     while (peek(parser).type != TK_EOF) {
         struct Stmt *stmt = parse_stmt(parser);
 
-        program->stmts = realloc(program->stmts, sizeof(struct Stmt*) * (program->size + 1));
+        struct Stmt **tmp = realloc(program->stmts, sizeof(struct Stmt*) * (program->size + 1));
+        if (!tmp) {
+            eprintf("memory allocation failure\n");            
+            exit(1); 
+        }
 
+        program->stmts = tmp;   
         program->stmts[program->size++] = stmt;
     }
 

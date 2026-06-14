@@ -19,18 +19,18 @@ void valuearray_init(struct ValueArray *arr) {
 void valuearray_write(struct ValueArray *arr, Value value) {
     if (arr->size >= arr->capacity) {
         size_t new_cap = arr->capacity * 2;
-        Value *tmp = arr->data;
-        arr->data = realloc(arr->data, new_cap * sizeof(Value));
-        if (!arr->data) {
-            free(tmp);
+
+        Value *new_data = realloc(arr->data, new_cap * sizeof(Value));
+        if (!new_data) {
             eprintf("memory allocation failure\n");
             exit(1);
         }
-        arr->data = tmp;
+
+        arr->data = new_data;
         arr->capacity = new_cap;
     }
-    arr->data[arr->size] = value;
-    arr->size++;
+
+    arr->data[arr->size++] = value;
 }
 
 void valuearray_free(struct ValueArray *arr) {

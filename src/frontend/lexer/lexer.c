@@ -27,7 +27,7 @@ void lexer_init(struct Lexer *lexer, const char *source, size_t source_len) {
     // internalize keywords on init
     #ifndef HAS_INTERNALIZED_KEYWORDS
         KW_print = str_intern("print");
-        #define HAS_INTERNALIZED_KEYWORDS = 1;
+        #define HAS_INTERNALIZED_KEYWORDS 
     #endif  
 }
 
@@ -160,10 +160,10 @@ struct Token lexer_next(struct Lexer *lexer) {
             size_t length = lexer->current - lexer->start;
             char *slice = malloc(length + 1);
             strncpy(slice, lexer->source + lexer->start, length);
+            slice[length] = '\0';
             const char *s = str_intern(slice);
             free(slice);
             if (s == KW_print) {
-                printf("generated print token\n");
                 return gen_token(lexer, TK_PRINT);
             } else {
                 eprintf("TODO: INDENTIFIERS YET TO BE IMPLEMENTED\n"); 
