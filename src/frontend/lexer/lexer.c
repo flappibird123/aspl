@@ -12,7 +12,8 @@
 #include <string.h>
 
 const char *KW_print;
-
+const char *KW_let;
+const char *KW_int;
 
 
 void lexer_init(struct Lexer *lexer, const char *source, size_t source_len) {
@@ -27,6 +28,8 @@ void lexer_init(struct Lexer *lexer, const char *source, size_t source_len) {
     // internalize keywords on init
     #ifndef HAS_INTERNALIZED_KEYWORDS
         KW_print = str_intern("print");
+        KW_let = str_intern("let");
+        KW_int = str_intern("int");
         #define HAS_INTERNALIZED_KEYWORDS 
     #endif  
 }
@@ -145,6 +148,9 @@ struct Token lexer_next(struct Lexer *lexer) {
     case ';':
         advance(lexer);
         return gen_token(lexer, TK_SEMICOLON);
+    case ':':
+        advance(lexer);
+        return gen_token(lexer, TK_COLON);
     default:
         if (isdigit((unsigned char)c)) {
             advance(lexer);
@@ -165,9 +171,12 @@ struct Token lexer_next(struct Lexer *lexer) {
             free(slice);
             if (s == KW_print) {
                 return gen_token(lexer, TK_PRINT);
+            } else if (s == KW_int) {
+                return gen_token(lexer, TK_INT);
+            } else if (s == KW_let) {
+                return gen_token(lexer, TK_LET);
             } else {
-                eprintf("TODO: INDENTIFIERS YET TO BE IMPLEMENTED\n"); 
-                exit(1);
+                return gen_token(lexer, TK_IDENTIFIER);
             }
         } else {
             fprintf(stderr, "Unknown character: '%c'\n", c);
