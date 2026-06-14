@@ -183,13 +183,20 @@ static struct Stmt *parse_stmt(struct Parser *parser) {
     }
 }
 
-struct Stmt *parser_parse(struct Parser *parser) {
-    struct Stmt *stmt = parse_stmt(parser);
-    if (peek(parser).type != TK_EOF) {
-        error("unexpected trailing tokens\n");
-        exit(1);
+struct Program *parser_parse(struct Parser *parser) {
+    struct Program *program = malloc(sizeof(struct Program));
+    program->stmts = NULL;
+    program->size = 0;
+
+    while (peek(parser).type != TK_EOF) {
+        struct Stmt *stmt = parse_stmt(parser);
+
+        program->stmts = realloc(program->stmts, sizeof(struct Stmt*) * (program->size + 1));
+
+        program->stmts[program->size++] = stmt;
     }
-    return stmt;
+
+    return program;
 }
 
 void parser_free(struct Parser *parser) {

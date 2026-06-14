@@ -3,7 +3,7 @@
 
 #include <stddef.h>
 
-typedef double Value;
+typedef int Value;
 
 struct ValueArray {
     Value *data;

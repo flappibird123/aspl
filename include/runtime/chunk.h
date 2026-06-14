@@ -28,7 +28,7 @@ void chunk_init(struct Chunk *chunk);
 void chunk_free(struct Chunk *chunk);
 
 void chunk_write(struct Chunk *chunk, Byte value, size_t line);
-void chunk_addconstant(struct Chunk *chunk, Value value);
+size_t chunk_addconstant(struct Chunk *chunk, Value value);
 
 
 #endif // RUNTIME_CHUNK_H

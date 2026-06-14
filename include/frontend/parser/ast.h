@@ -63,7 +63,12 @@ struct Stmt {
     struct NodeMetadata metadata;
 };
 
-void free_ast(struct Stmt *ast);
+struct Program {
+    struct Stmt **stmts;
+    size_t size;
+};
+
+void free_ast(struct Program *ast);
 
 #endif // FRONTEND_PARSER_AST_H
 

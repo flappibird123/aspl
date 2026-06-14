@@ -74,6 +74,8 @@ void chunk_write(struct Chunk *chunk, Byte value, size_t line) {
     bytecodearray_write(chunk->bytecode, value, line);
 }
 
-void chunk_addconstant(struct Chunk *chunk, Value value) {
+size_t chunk_addconstant(struct Chunk *chunk, Value value) {
+    size_t index = chunk->constants->size;
     valuearray_write(chunk->constants, value);
+    return index;
 }
