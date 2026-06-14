@@ -53,17 +53,13 @@ struct ExprStmt {
     struct Expr *expr;
 };
 
-enum TypeKind {
+enum Type {
     TYPE_INT,
-};
-
-struct Type {
-    enum TypeKind kind;
 };
 
 struct VarDecl {
     const char *name;
-    struct Type *type;
+    enum Type type;
     struct Expr *init;
 };
 
