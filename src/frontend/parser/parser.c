@@ -166,12 +166,12 @@ static struct Stmt *create_vardecl(const char *name, enum Type type, struct Expr
 }
 
 static struct Stmt *parse_vardecl(struct Parser* parser, struct Token start) {
-    if (peek(parser).type != TK_IDENTIFIER) {
-        error("expected identifier at %zu:%zu\n", peek(parser).line, peek(parser).column);
+    struct Token tok = advance(parser);
+
+    if (tok.type != TK_IDENTIFIER) {
+        error("expected identifier at %zu:%zu\n", tok.line, tok.column);
         exit(1);
     }
-
-    struct Token tok = advance(parser);
     char *var_name = malloc(tok.length + 1);
     memcpy(var_name, parser->lexer->source + tok.offest, tok.length);
     var_name[tok.length] = '\0';
@@ -203,12 +203,19 @@ static struct Stmt *parse_vardecl(struct Parser* parser, struct Token start) {
     if (peek(parser).type == TK_EQUAL) {
         advance(parser);
         struct Expr *expr = parse_expression(parser);
+        if (peek(parser).type != TK_SEMICOLON) {
+            error("expected ';' at %zu:%zu\n", peek(parser).line,
+                  peek(parser).column);
+            exit(1);
+        }
+        advance(parser);
         return create_vardecl(var_name, var_type, expr, start);
     } else {
         if (peek(parser).type != TK_SEMICOLON) {
-            error("unexpected token at %zu:%zu\n", peek(parser).type);
+            error("unexpected token: %d at %zu:%zu\n", peek(parser).type, peek(parser).line, peek(parser).column);
             exit(1);
         }
+        advance(parser);
         return create_vardecl(var_name, var_type, NULL, start);
     }
 }
@@ -230,12 +237,6 @@ static struct Stmt *parse_stmt(struct Parser *parser) {
         case TK_LET: {
             struct Token start = advance(parser);
             struct Stmt *stmt = parse_vardecl(parser, start);
-            if (peek(parser).type != TK_SEMICOLON) {
-                error("expected ';' at %zu:%zu\n", peek(parser).line,
-                  peek(parser).column);
-                exit(1);
-            }
-            advance(parser);
             return stmt;
         }
         case TK_INTEGERLITERAL:
