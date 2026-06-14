@@ -50,10 +50,20 @@ void bytecodearray_free(struct BytecodeArray *bytecodearray) {
 }
 
 void chunk_init(struct Chunk *chunk) {
-    
+    struct BytecodeArray *bytecode = malloc(sizeof(struct BytecodeArray));
+    struct ValueArray *constants = malloc(sizeof(struct ValueArray));
+    bytecodearray_init(bytecode);
+    valuearray_init(constants);
+    chunk->bytecode = bytecode;
+    chunk->constants = constants;
 }
 
 void chunk_free(struct Chunk *chunk) {
-    (void)chunk;
+    bytecodearray_free(chunk->bytecode);
+    valuearray_free(chunk->constants);
+    free(chunk->bytecode);
+    free(chunk->constants);
+    chunk->bytecode = NULL;
+    chunk->constants = NULL;
 }
 

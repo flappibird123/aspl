@@ -20,8 +20,8 @@ void bytecodearray_write(struct BytecodeArray *bytecodearray, Byte value);
 void bytecodearray_free(struct BytecodeArray *bytecodearray);
 
 struct Chunk {
-    struct BytecodeArray bytecode;
-    struct ValueArray constants;
+    struct BytecodeArray *bytecode;
+    struct ValueArray *constants;
 };
 
 void chunk_init(struct Chunk *chunk);
