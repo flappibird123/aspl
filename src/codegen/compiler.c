@@ -2,6 +2,8 @@
 
 #include "runtime/opcode.h"
 
+static void compile_expr(struct Compiler *compiler, struct Expr *expr, struct Chunk *chunk);
+
 void compiler_init(struct Compiler *compiler) {
     (void)compiler;
 }
@@ -16,22 +18,6 @@ static void compile_literal(Value v, struct Chunk *chunk, struct NodeMetadata me
     emit_byte(chunk, constant_index, metadata);
 }
 
-static void compile_expr(struct Compiler *compiler, struct Expr *expr, struct Chunk *chunk) {
-    switch (expr->type) {
-
-        case EX_INT_LITERAL:
-            compile_literal(expr->value.intliteral.value, chunk, expr->metadata);
-            break;
-
-        case EX_BINARY:
-            compile_binary(compiler, expr, chunk);
-            break;
-
-        default:
-            // handle error or unreachable
-            break;
-    }
-}
 
 static void compile_binary(struct Compiler *compiler, struct Expr *expr, struct Chunk *chunk) {
     compile_expr(compiler, expr->value.binop.left, chunk);
@@ -53,12 +39,32 @@ static void compile_binary(struct Compiler *compiler, struct Expr *expr, struct 
     }
 }
 
+static void compile_expr(struct Compiler *compiler, struct Expr *expr, struct Chunk *chunk) {
+    switch (expr->type) {
+
+        case EX_INT_LITERAL:
+            compile_literal(expr->value.intliteral.value, chunk, expr->metadata);
+            break;
+
+        case EX_BINARY:
+            compile_binary(compiler, expr, chunk);
+            break;
+
+        default:
+            // handle error or unreachable
+            break;
+    }
+}
+
 
 static void compile_stmt(struct Compiler *compiler, struct Stmt *stmt, struct Chunk *chunk) {
     switch (stmt->type) {
         case STMT_PRINT:
             compile_expr(compiler, stmt->value.printstmt.expr, chunk);
             emit_byte(chunk, OP_IPRINT, stmt->metadata);
+            break;
+        case STMT_STMTEXPR:
+            compile_expr(compiler, stmt->value.exprstmt.expr, chunk);
             break;
     }
 }

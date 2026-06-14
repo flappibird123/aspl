@@ -1,6 +1,9 @@
 #ifndef FRONTEND_PARSER_AST_H
 #define FRONTEND_PARSER_AST_H
 
+#include <stddef.h>
+
+
 struct NodeMetadata {
     size_t line;
     size_t column;
