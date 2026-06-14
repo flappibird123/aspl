@@ -6,8 +6,10 @@
 
 #include "runtime/vm.h"
 #include "runtime/chunk.h"
-#include "runtime/value.h"
-#include "frontend/lexer/lexer.h"
+
+#include "frontend/parser/parser.h"
+
+#include "codegen/compiler.h"
 
 int main(int argc, const char *argv[]) {
     if (argc != 2) {
@@ -19,36 +21,24 @@ int main(int argc, const char *argv[]) {
     size_t size;
     char *source = read_file(argv[1], &size);
 
-    struct Lexer lexer;
-    lexer_init(&lexer, source, size);
-    while (1) {
-        lexer_next(&lexer);
-    } 
-    lexer_free(&lexer);
-    return 1;
+    struct Parser parser = {0};
+    parser_init(&parser, source, size);
+    struct Program *program = parser_parse(&parser);
+    parser_free(&parser);
+
+    struct Chunk chunk;
+    chunk_init(&chunk);
+    struct Compiler compiler;
+    compiler_init(&compiler);
+    compiler_compile(&compiler, program, &chunk);
+    compiler_free(&compiler);
+
+    free_ast(program);
 
     struct VM vm;
     vm_init(&vm);
-    struct Chunk chunk;
-    struct BytecodeArray bytecode;
-    bytecodearray_init(&bytecode);
-    bytecodearray_push(&bytecode, 4);
-    bytecodearray_push(&bytecode, 0);
-    bytecodearray_push(&bytecode, 4);
-    bytecodearray_push(&bytecode, 1);
-    bytecodearray_push(&bytecode, 1);
-    bytecodearray_push(&bytecode, 6);
-    bytecodearray_push(&bytecode, 5);
-    struct ValueArray constants;
-    valuearray_init(&constants);
-    valuearray_push(&constants, 6);
-    valuearray_push(&constants, 2);
-    chunk_init(&chunk, &bytecode, &constants);
     vm_run(&vm, &chunk);
-
-    bytecodearray_free(&bytecode);
-    valuearray_free(&constants);
-
+    vm_free(&vm); 
 
     return 0;
 

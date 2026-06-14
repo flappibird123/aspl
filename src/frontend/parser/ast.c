@@ -1,4 +1,4 @@
-#include "ast.h"
+#include "frontend/parser/ast.h"
 
 #include <stdlib.h>
 #include <stddef.h>
@@ -23,7 +23,7 @@ static void free_expr(struct Expr *expr) {
     free(expr);
 }
 
-void free_ast(struct Stmt *ast) {
+static void free_stmt(struct Stmt *ast) {
     if (!ast) return;
 
     switch (ast->type) {
@@ -37,4 +37,12 @@ void free_ast(struct Stmt *ast) {
     }
 
     free(ast);
+}
+
+void free_ast(struct Program *program) {
+    for (size_t i = 0; i < program->size; ++i) {
+        free_stmt(program->stmts[i]);
+    }
+    free(program->stmts);
+    free(program);
 }

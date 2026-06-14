@@ -1,4 +1,4 @@
-#include "str_intern.h"
+#include "str/str_intern.h"
 
 #include <string.h>
 #include <stdlib.h>

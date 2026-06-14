@@ -7,3 +7,7 @@ aspl
 *.spl
 
 *.txt
+
+.bear
+
+.vscode

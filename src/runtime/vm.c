@@ -1,18 +1,18 @@
-#include "vm.h"
+#include "runtime/vm.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
 
 #include "io/ioutils.h"
-#include "opcode.h"
+#include "runtime/opcode.h"
 
 void vm_init(struct VM* vm) {
     (void)vm;
 }
 
 static Byte get_opcode(struct VM *vm, struct Chunk *chunk) {
-    return *(chunk->bytecode.data + vm->ip);
+    return *(chunk->bytecode->data + vm->ip);
 }
 
 #define OPCODE_COUNT 7
@@ -91,8 +91,8 @@ void vm_run(struct VM *vm, struct Chunk *chunk) {
             }
             case OP_LOADCONST: {
                 vm->ip++;
-                Byte index = chunk->bytecode.data[vm->ip];
-                Value value = chunk->constants.data[index];
+                Byte index = chunk->bytecode->data[vm->ip];
+                Value value = chunk->constants->data[index];
                 push(vm, value);
                 vm->ip++; 
                 break;

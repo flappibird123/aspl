@@ -3,7 +3,7 @@
 
 #include <stddef.h>
 
-typedef double Value;
+typedef int Value;
 
 struct ValueArray {
     Value *data;
@@ -12,7 +12,7 @@ struct ValueArray {
 };
 
 void valuearray_init(struct ValueArray *arr);
-void valuearray_push(struct ValueArray *arr, Value value);
+void valuearray_write(struct ValueArray *arr, Value value);
 void valuearray_free(struct ValueArray *arr);
 
 #endif // RUNTIME_VALUE_H

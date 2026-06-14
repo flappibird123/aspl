@@ -1,5 +1,7 @@
-#include "parser.h"
-#include "ast.h"
+#include "frontend/parser/parser.h"
+
+#include "frontend/parser/ast.h"
+#include "io/ioutils.h"
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -9,13 +11,14 @@
 static struct Expr *parse_expression(struct Parser *parser);
 
 void parser_init(struct Parser *parser, const char *source, size_t source_len) {
-    if (parser && parser->lexer) {
+    parser->lexer = NULL;
+    if (parser->lexer != NULL) {
         lexer_free(parser->lexer);
         free(parser->lexer);
     }
-    struct Lexer *lexer = malloc(sizeof(struct Lexer));
-    lexer_init(lexer, source, source_len);
-    parser->lexer = lexer;
+
+    parser->lexer = malloc(sizeof(struct Lexer));
+    lexer_init(parser->lexer, source, source_len);
     parser->next = lexer_next(parser->lexer);
 }
 
@@ -46,6 +49,9 @@ static struct Expr *create_integer_literal(struct Parser *parser, struct Token t
     expr->value.intliteral.value = value;
 
     free(strnum);
+
+    expr->metadata.line = tok.line;
+    expr->metadata.column = tok.column;
 
     return expr;
 }
@@ -81,39 +87,47 @@ static struct Expr *parse_primary(struct Parser *parser) {
 }
 
 static struct Expr *create_binary_op(struct Expr *left,
-                                     struct Expr *right, enum BinOpType op) {
+                                     struct Expr *right, enum BinOpType op, struct Token tok) {
     struct Expr *expr = malloc(sizeof(struct Expr));
     expr->type = EX_BINARY;
     expr->value.binop.op = op;
     expr->value.binop.left = left;
     expr->value.binop.right = right;
 
+    expr->metadata.column = tok.column;
+    expr->metadata.line = tok.line;
+
     return expr;
 }
 
-static struct Stmt *create_exprstmt(struct Expr *expr) {
+static struct Stmt *create_exprstmt(struct Expr *expr, struct Token tok) {
     struct Stmt *stmt = malloc(sizeof(struct Stmt));
     stmt->type = STMT_STMTEXPR;
     stmt->value.exprstmt.expr = expr;
+    stmt->metadata.line = tok.line;
+    stmt->metadata.column = tok.column;
     return stmt;
 }
 
-static struct Stmt *create_printstmt(struct Expr *expr) {
+static struct Stmt *create_printstmt(struct Expr *expr, struct Token tok) {
     struct Stmt *stmt = malloc(sizeof(struct Stmt));
     stmt->type = STMT_PRINT;
-    stmt->value.exprstmt.expr = expr;
+    stmt->value.printstmt.expr = expr;
+    stmt->metadata.line = tok.line;
+    stmt->metadata.column = tok.column;
     return stmt;
 }
 
 static struct Expr *parse_factor(struct Parser *parser) {
     struct Expr *left = parse_primary(parser);
     while (peek(parser).type == TK_STAR || peek(parser).type == TK_SLASH) {
-        enum TokenType type = advance(parser).type;
+        struct Token tok = advance(parser);
+        enum TokenType type = tok.type;
         struct Expr *right = parse_primary(parser);
         if (type == TK_STAR) {
-            left = create_binary_op(left, right, BIN_MUL);
+            left = create_binary_op(left, right, BIN_MUL, tok);
         } else {
-            left = create_binary_op(left, right, BIN_DIV);
+            left = create_binary_op(left, right, BIN_DIV, tok);
         }
     }
     return left;
@@ -122,12 +136,13 @@ static struct Expr *parse_factor(struct Parser *parser) {
 static struct Expr *parse_term(struct Parser *parser) {
     struct Expr *left = parse_factor(parser);
     while (peek(parser).type == TK_PLUS || peek(parser).type == TK_MINUS) {
-        enum TokenType type = advance(parser).type;
+        struct Token tok = advance(parser);
+        enum TokenType type = tok.type;
         struct Expr *right = parse_factor(parser);
         if (type == TK_PLUS) {
-            left = create_binary_op(left, right, BIN_ADD);
+            left = create_binary_op(left, right, BIN_ADD, tok);
         } else {
-            left = create_binary_op(left, right, BIN_SUB);
+            left = create_binary_op(left, right, BIN_SUB, tok);
         } 
     }
     return left;
@@ -140,11 +155,12 @@ static struct Expr *parse_expression(struct Parser *parser) {
 static struct Stmt *parse_stmt(struct Parser *parser) {
     switch (peek(parser).type) {
         case TK_PRINT: {
-            advance(parser);
-            struct Stmt *stmt = create_printstmt(parse_expression(parser));
+            struct Token start = advance(parser);
+            struct Expr *expr = parse_expression(parser);
+            struct Stmt *stmt = create_printstmt(expr, start);
             if (peek(parser).type != TK_SEMICOLON) {
-                error("expected ';' at %zu:%zu\n", peek(parser).column,
-                  peek(parser).line);
+                error("expected ';' at %zu:%zu\n", peek(parser).line,
+                  peek(parser).column);
                 exit(1);
             }
             advance(parser);
@@ -152,7 +168,9 @@ static struct Stmt *parse_stmt(struct Parser *parser) {
         }    
         case TK_INTEGERLITERAL:
         case TK_OPENPAREN: {
-            struct Stmt *stmt = create_exprstmt(parse_expression(parser));
+            struct Token start = peek(parser);
+            struct Expr *expr = parse_expression(parser);
+            struct Stmt *stmt = create_exprstmt(expr, start);
             if (peek(parser).type != TK_SEMICOLON) {
                 error("expected ';' at %zu:%zu\n", peek(parser).column,
                   peek(parser).line);
@@ -167,13 +185,25 @@ static struct Stmt *parse_stmt(struct Parser *parser) {
     }
 }
 
-struct Stmt *parser_parse(struct Parser *parser) {
-    struct Stmt *stmt = parse_stmt(parser);
-    if (peek(parser).type != TK_EOF) {
-        error("unexpected trailing tokens\n");
-        exit(1);
+struct Program *parser_parse(struct Parser *parser) {
+    struct Program *program = malloc(sizeof(struct Program));
+    program->stmts = NULL;
+    program->size = 0;
+
+    while (peek(parser).type != TK_EOF) {
+        struct Stmt *stmt = parse_stmt(parser);
+
+        struct Stmt **tmp = realloc(program->stmts, sizeof(struct Stmt*) * (program->size + 1));
+        if (!tmp) {
+            eprintf("memory allocation failure\n");            
+            exit(1); 
+        }
+
+        program->stmts = tmp;   
+        program->stmts[program->size++] = stmt;
     }
-    return stmt;
+
+    return program;
 }
 
 void parser_free(struct Parser *parser) {
