@@ -8,7 +8,9 @@
 #include "runtime/opcode.h"
 
 void vm_init(struct VM* vm) {
-    (void)vm;
+    for (int i = 0; i < 256; i++) {
+        vm->locals[i] = 0;
+    }
 }
 
 static Byte read_byte(struct VM *vm, struct Chunk *chunk) {
@@ -87,6 +89,16 @@ void vm_run(struct VM *vm, struct Chunk *chunk) {
                 Value value = pop(vm);
                 int ivalue = (int)value;
                 printf("%d\n", ivalue);
+                break;
+            }
+            case OP_LOADLOCAL: {
+                Byte slot = read_byte(vm, chunk);
+                push(vm, vm->locals[slot]);
+                break;
+            }
+            case OP_STORELOCAL: {
+                Byte slot = read_byte(vm, chunk);
+                vm->locals[slot] = pop(vm);
                 break;
             }
             default: {
