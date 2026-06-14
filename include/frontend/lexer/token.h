@@ -19,6 +19,8 @@ enum TokenType {
     TK_SEMICOLON,
     TK_COLON,
 
+    TK_EQUAL,
+
     TK_IDENTIFIER,
 
     TK_INT,
