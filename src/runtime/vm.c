@@ -11,24 +11,8 @@ void vm_init(struct VM* vm) {
     (void)vm;
 }
 
-static Byte get_opcode(struct VM *vm, struct Chunk *chunk) {
-    return *(chunk->bytecode->data + vm->ip);
-}
-
-#define OPCODE_COUNT 7
-
-static enum OpCode byte_values[OPCODE_COUNT] = {
-    OP_IADD,
-    OP_ISUB,
-    OP_IMUL,
-    OP_IDIV,
-    OP_LOADCONST,
-    OP_HALT,
-    OP_IPRINT,
-};
-
-static enum OpCode decode_byte(Byte byte) {
-    return byte_values[byte];
+static Byte read_byte(struct VM *vm, struct Chunk *chunk) {
+    return chunk->bytecode->data[vm->ip++];
 }
 
 static Value pop(struct VM *vm) {
@@ -47,11 +31,20 @@ static void push(struct VM *vm, Value value) {
     vm->stack.stack[vm->stack.sp++] = value;
 }
 
+static enum OpCode decode_byte(Byte byte) {
+    return (enum OpCode)byte;
+}
+
+static Value read_constant(struct VM *vm, struct Chunk *chunk) {
+    Byte index = read_byte(vm, chunk);
+    return chunk->constants->data[index];
+}
+
 void vm_run(struct VM *vm, struct Chunk *chunk) {
     vm->stack.sp = 0;
     vm->ip = 0;
     while (true) {
-        Byte byte = get_opcode(vm, chunk);
+        Byte byte = read_byte(vm, chunk);
         enum OpCode opcode = decode_byte(byte);
         if (opcode == OP_HALT) {
             break;
@@ -61,21 +54,18 @@ void vm_run(struct VM *vm, struct Chunk *chunk) {
                 Value b = pop(vm);
                 Value a = pop(vm);
                 push(vm, a + b);
-                vm->ip++;
                 break;
             }
             case OP_ISUB: {
                 Value b = pop(vm);
                 Value a = pop(vm);
                 push(vm, a - b);
-                vm->ip++;
                 break;
             }
             case OP_IMUL: {
                 Value b = pop(vm);
                 Value a = pop(vm);
                 push(vm, a * b);
-                vm->ip++;
                 break;
             }
             case OP_IDIV: {
@@ -86,22 +76,17 @@ void vm_run(struct VM *vm, struct Chunk *chunk) {
                 }
                 Value a = pop(vm);
                 push(vm, a / b);
-                vm->ip++;
                 break;
             }
             case OP_LOADCONST: {
-                vm->ip++;
-                Byte index = chunk->bytecode->data[vm->ip];
-                Value value = chunk->constants->data[index];
+                Value value = read_constant(vm, chunk);
                 push(vm, value);
-                vm->ip++; 
                 break;
             }
             case OP_IPRINT: {
                 Value value = pop(vm);
                 int ivalue = (int)value;
                 printf("%d\n", ivalue);
-                vm->ip++;
                 break;
             }
             default: {
