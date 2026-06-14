@@ -73,8 +73,8 @@ static struct Expr *parse_primary(struct Parser *parser) {
         advance(parser);
         struct Expr *expr = parse_expression(parser);
         if (peek(parser).type != TK_CLOSEPAREN) {
-            error("expected ')' at %zu:%zu\n", peek(parser).column,
-                  peek(parser).line);
+            error("expected ')' at %zu:%zu\n", peek(parser).line,
+                  peek(parser).column);
             exit(1);
         }
         advance(parser);
