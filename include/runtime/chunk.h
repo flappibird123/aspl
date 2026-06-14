@@ -30,6 +30,8 @@ void chunk_free(struct Chunk *chunk);
 void chunk_write(struct Chunk *chunk, Byte value, size_t line);
 size_t chunk_addconstant(struct Chunk *chunk, Value value);
 
+void dump_chunk(struct Chunk *chunk);
+
 
 #endif // RUNTIME_CHUNK_H
 

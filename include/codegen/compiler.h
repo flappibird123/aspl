@@ -9,7 +9,7 @@ struct Compiler {
 };
 
 void compiler_init(struct Compiler *compiler);
-void compiler_compile(struct Compiler *compiler, struct Program *ast, struct Chunk *chunk);
+void compiler_compile(struct Compiler *compiler, struct Program *program, struct Chunk *chunk);
 void compiler_free(struct Compiler *compiler);
 
 #endif // CODEGEN_COMPILER_H

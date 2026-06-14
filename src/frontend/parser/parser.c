@@ -33,22 +33,13 @@ static struct Token advance(struct Parser *parser) {
 static struct Expr *create_integer_literal(struct Parser *parser, struct Token tok) {
     struct Expr *expr = malloc(sizeof(struct Expr));
     expr->type = EX_INT_LITERAL;
-    char *strnum = malloc(tok.length + 1);
-    memcpy(strnum, parser->lexer->source + tok.offest, tok.length); 
-    strnum[tok.length] = '\0';
+    char buf[32];
+    memcpy(buf, parser->lexer->source + tok.offest, tok.length);
+    buf[tok.length] = '\0';
+    long value = strtol(buf, NULL, 10);
 
-    char *end;
-    long value = strtol(strnum, &end, 10);
-
-    if (*end != '\0') {
-        printf("parsed value: %ld\n", value);
-        fprintf(stderr, "parsing failed\n");
-        exit(1);
-    }
-
+    
     expr->value.intliteral.value = value;
-
-    free(strnum);
 
     expr->metadata.line = tok.line;
     expr->metadata.column = tok.column;
@@ -78,6 +69,7 @@ static struct Expr *parse_primary(struct Parser *parser) {
             exit(1);
         }
         advance(parser);
+        
         
         return expr;
     } else {
@@ -202,6 +194,7 @@ struct Program *parser_parse(struct Parser *parser) {
         program->stmts = tmp;   
         program->stmts[program->size++] = stmt;
     }
+
 
     return program;
 }

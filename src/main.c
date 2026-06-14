@@ -32,7 +32,6 @@ int main(int argc, const char *argv[]) {
     compiler_init(&compiler);
     compiler_compile(&compiler, program, &chunk);
     compiler_free(&compiler);
-
     free_ast(program);
 
     struct VM vm;
@@ -41,10 +40,4 @@ int main(int argc, const char *argv[]) {
     vm_free(&vm); 
 
     return 0;
-
-    // printf("%s\n", source);
-
-    // free(source);
-
-    // return run_test(argc, argv);
 }

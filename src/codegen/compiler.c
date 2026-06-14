@@ -69,18 +69,14 @@ static void compile_stmt(struct Compiler *compiler, struct Stmt *stmt, struct Ch
     }
 }
 
-void compiler_compile(struct Compiler *compiler, struct Program *ast, struct Chunk *chunk) {
-    struct Stmt *current = *ast->stmts;
+#include <stdio.h> 
 
-    size_t i = 0;
-
-    while (i < ast->size) {
-        compile_stmt(compiler, current, chunk);
-        current = ast->stmts[i];
-        ++i;
+void compiler_compile(struct Compiler *compiler, struct Program *program, struct Chunk *chunk) {
+    for (size_t i = 0; i < program->size; i++) {
+        compile_stmt(compiler, program->stmts[i], chunk);
     }
 
-    emit_byte(chunk, OP_HALT, (struct NodeMetadata) {0});
+    emit_byte(chunk, OP_HALT, (struct NodeMetadata){0});
 }
 
 void compiler_free(struct Compiler *compiler) {
