@@ -53,6 +53,12 @@ enum StmtType {
     STMT_PRINT,
     STMT_STMTEXPR,
     STMT_VARDECL,
+    STMT_VARASSIGN,
+};
+
+struct VarAssign {
+    char *name;
+    struct Expr *value;
 };
 
 struct ExprStmt {
@@ -79,6 +85,7 @@ struct Stmt {
         struct ExprStmt exprstmt;
         struct PrintStmt printstmt;
         struct VarDecl variabledecl;
+        struct VarAssign variableassignment;
     } value;
 
     struct NodeMetadata metadata;
