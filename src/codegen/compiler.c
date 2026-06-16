@@ -18,12 +18,12 @@ static void emit_byte(struct Chunk *chunk, Byte byte, struct NodeMetadata metada
 
 static Byte add_local(struct Compiler *compiler, const char *name) {
     int slot = compiler->local_count++;
-    compiler->locals[slot].name = name;
+    compiler->locals[slot].name = strdup(name);
     compiler->locals[slot].slot = slot;
     return slot;
 }
 
-static Byte find_local(struct Compiler *compiler, const char *name) {
+static int find_local(struct Compiler *compiler, const char *name) {
     for (int i = 0; i < compiler->local_count; i++) {
         if (strcmp(compiler->locals[i].name, name) == 0)
             return compiler->locals[i].slot;
@@ -105,6 +105,17 @@ static void compile_stmt(struct Compiler *compiler, struct Stmt *stmt, struct Ch
                 emit_byte(chunk, 0, stmt->metadata); // default value
             }
 
+            emit_byte(chunk, OP_STORELOCAL, stmt->metadata);
+            emit_byte(chunk, slot, stmt->metadata);
+            break;
+        }
+        case STMT_VARASSIGN: {
+            compile_expr(compiler, stmt->value.variableassignment.value, chunk);
+            int slot = find_local(compiler, stmt->value.variableassignment.name);
+            if (slot < 0) {
+                eprintf("Undeclared variable: %s\n", stmt->value.variableassignment.name);
+                exit(1);
+            }
             emit_byte(chunk, OP_STORELOCAL, stmt->metadata);
             emit_byte(chunk, slot, stmt->metadata);
             break;
