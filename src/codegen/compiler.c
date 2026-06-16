@@ -12,21 +12,43 @@ void compiler_init(struct Compiler *compiler) {
     compiler->local_count = 0;
 }
 
+static void begin_scope(struct Compiler *compiler) {
+    compiler->scope_depth++;
+    compiler->scopes[compiler->scope_depth].count = 0;
+    compiler->scopes[compiler->scope_depth].start_slot = compiler->local_count;
+}
+
+static void end_scope(struct Compiler *compiler) {
+    compiler->local_count = compiler->scopes[compiler->scope_depth].start_slot;
+    compiler->scope_depth--;
+}
+
 static void emit_byte(struct Chunk *chunk, Byte byte, struct NodeMetadata metadata) {
     chunk_write(chunk, byte, metadata.line);
 }
 
-static Byte add_local(struct Compiler *compiler, const char *name) {
+static int add_local(struct Compiler *compiler, const char *name) {
+    struct Scope *scope = &compiler->scopes[compiler->scope_depth];
+
     int slot = compiler->local_count++;
-    compiler->locals[slot].name = strdup(name);
-    compiler->locals[slot].slot = slot;
+
+    scope->symbols[scope->count++] = (struct Symbol){
+        .name = strdup(name),
+        .slot = slot
+    };
+
     return slot;
 }
 
 static int find_local(struct Compiler *compiler, const char *name) {
-    for (int i = 0; i < compiler->local_count; i++) {
-        if (strcmp(compiler->locals[i].name, name) == 0)
-            return compiler->locals[i].slot;
+    for (int i = compiler->scope_depth; i >= 0; i--) {
+        struct Scope *scope = &compiler->scopes[i];
+
+        for (size_t j = 0; j < scope->count; j++) {
+            if (strcmp(scope->symbols[j].name, name) == 0) {
+                return scope->symbols[j].slot;
+            }
+        }
     }
     return -1; // not found
 }
@@ -120,11 +142,23 @@ static void compile_stmt(struct Compiler *compiler, struct Stmt *stmt, struct Ch
             emit_byte(chunk, slot, stmt->metadata);
             break;
         }
+        case STMT_BLOCK: {
+            begin_scope(compiler);
+
+            for (size_t i = 0; i < stmt->value.block.count; i++) {
+                compile_stmt(compiler, stmt->value.block.stmts[i], chunk);
+            }
+
+            end_scope(compiler);
+            break;
+        }
     }
 }
 
 
 void compiler_compile(struct Compiler *compiler, struct Program *program, struct Chunk *chunk) {
+    compiler->scope_depth = 0;
+    begin_scope(compiler);
     for (size_t i = 0; i < program->size; i++) {
         compile_stmt(compiler, program->stmts[i], chunk);
     }
