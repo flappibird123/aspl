@@ -4,12 +4,29 @@
 #include "frontend/parser/ast.h"
 #include "runtime/chunk.h"
 
-struct Compiler {
+#define MAX_LOCALS 256
+#define MAX_SCOPE 64
 
+struct Symbol {
+    const char *name;
+    Byte slot;
+};
+
+struct Scope {
+    struct Symbol symbols[MAX_LOCALS];
+    size_t count;
+    size_t start_slot;
+};
+
+struct Compiler {
+    struct Scope scopes[MAX_SCOPE];
+    size_t scope_depth;
+
+    int local_count;
 };
 
 void compiler_init(struct Compiler *compiler);
-void compiler_compile(struct Compiler *compiler, struct Program *ast, struct Chunk *chunk);
+void compiler_compile(struct Compiler *compiler, struct Program *program, struct Chunk *chunk);
 void compiler_free(struct Compiler *compiler);
 
 #endif // CODEGEN_COMPILER_H

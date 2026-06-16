@@ -79,3 +79,16 @@ size_t chunk_addconstant(struct Chunk *chunk, Value value) {
     valuearray_write(chunk->constants, value);
     return index;
 }
+
+void dump_chunk(struct Chunk *chunk) {
+    printf("DEBUG: PRINT CHUNK:\n");
+    printf("BYTECODE: ");
+    for (size_t i = 0; i < chunk->bytecode->size; ++i) {
+        printf("%d, ", (int)chunk->bytecode->data[i]);
+    }
+    printf("\nCONSTANTS: ");
+    for (size_t i = 0; i < chunk->constants->size; ++i) {
+        printf("%d, ", (int)chunk->constants->data[i]);
+    }
+    printf("\n");
+}

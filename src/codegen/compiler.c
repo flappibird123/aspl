@@ -1,15 +1,56 @@
 #include "codegen/compiler.h"
 
 #include "runtime/opcode.h"
+#include "io/ioutils.h"
+
+#include <string.h>
+#include <stdlib.h>
 
 static void compile_expr(struct Compiler *compiler, struct Expr *expr, struct Chunk *chunk);
 
 void compiler_init(struct Compiler *compiler) {
-    (void)compiler;
+    compiler->local_count = 0;
+}
+
+static void begin_scope(struct Compiler *compiler) {
+    compiler->scope_depth++;
+    compiler->scopes[compiler->scope_depth].count = 0;
+    compiler->scopes[compiler->scope_depth].start_slot = compiler->local_count;
+}
+
+static void end_scope(struct Compiler *compiler) {
+    compiler->local_count = compiler->scopes[compiler->scope_depth].start_slot;
+    compiler->scope_depth--;
 }
 
 static void emit_byte(struct Chunk *chunk, Byte byte, struct NodeMetadata metadata) {
     chunk_write(chunk, byte, metadata.line);
+}
+
+static int add_local(struct Compiler *compiler, const char *name) {
+    struct Scope *scope = &compiler->scopes[compiler->scope_depth];
+
+    int slot = compiler->local_count++;
+
+    scope->symbols[scope->count++] = (struct Symbol){
+        .name = strdup(name),
+        .slot = slot
+    };
+
+    return slot;
+}
+
+static int find_local(struct Compiler *compiler, const char *name) {
+    for (int i = compiler->scope_depth; i >= 0; i--) {
+        struct Scope *scope = &compiler->scopes[i];
+
+        for (size_t j = 0; j < scope->count; j++) {
+            if (strcmp(scope->symbols[j].name, name) == 0) {
+                return scope->symbols[j].slot;
+            }
+        }
+    }
+    return -1; // not found
 }
 
 static void compile_literal(Value v, struct Chunk *chunk, struct NodeMetadata metadata) {
@@ -49,7 +90,18 @@ static void compile_expr(struct Compiler *compiler, struct Expr *expr, struct Ch
         case EX_BINARY:
             compile_binary(compiler, expr, chunk);
             break;
+        case EX_VARIABLE: {
+            int slot = find_local(compiler, expr->value.variable.name);
 
+            if (slot < 0) {
+                eprintf("undefined variable: %s\n", expr->value.variable.name);
+                exit(1);
+            }
+
+            emit_byte(chunk, OP_LOADLOCAL, expr->metadata);
+            emit_byte(chunk, slot, expr->metadata);
+            break;
+        }
         default:
             // handle error or unreachable
             break;
@@ -66,21 +118,52 @@ static void compile_stmt(struct Compiler *compiler, struct Stmt *stmt, struct Ch
         case STMT_STMTEXPR:
             compile_expr(compiler, stmt->value.exprstmt.expr, chunk);
             break;
+        case STMT_VARDECL: {
+            int slot = add_local(compiler, stmt->value.variabledecl.name);
+            if (stmt->value.variabledecl.init != NULL) {
+                compile_expr(compiler, stmt->value.variabledecl.init, chunk);
+            } else {
+                emit_byte(chunk, OP_LOADCONST, stmt->metadata);
+                emit_byte(chunk, 0, stmt->metadata); // default value
+            }
+
+            emit_byte(chunk, OP_STORELOCAL, stmt->metadata);
+            emit_byte(chunk, slot, stmt->metadata);
+            break;
+        }
+        case STMT_VARASSIGN: {
+            compile_expr(compiler, stmt->value.variableassignment.value, chunk);
+            int slot = find_local(compiler, stmt->value.variableassignment.name);
+            if (slot < 0) {
+                eprintf("Undeclared variable: %s\n", stmt->value.variableassignment.name);
+                exit(1);
+            }
+            emit_byte(chunk, OP_STORELOCAL, stmt->metadata);
+            emit_byte(chunk, slot, stmt->metadata);
+            break;
+        }
+        case STMT_BLOCK: {
+            begin_scope(compiler);
+
+            for (size_t i = 0; i < stmt->value.block.count; i++) {
+                compile_stmt(compiler, stmt->value.block.stmts[i], chunk);
+            }
+
+            end_scope(compiler);
+            break;
+        }
     }
 }
 
-void compiler_compile(struct Compiler *compiler, struct Program *ast, struct Chunk *chunk) {
-    struct Stmt *current = *ast->stmts;
 
-    size_t i = 0;
-
-    while (i < ast->size) {
-        compile_stmt(compiler, current, chunk);
-        current = ast->stmts[i];
-        ++i;
+void compiler_compile(struct Compiler *compiler, struct Program *program, struct Chunk *chunk) {
+    compiler->scope_depth = 0;
+    begin_scope(compiler);
+    for (size_t i = 0; i < program->size; i++) {
+        compile_stmt(compiler, program->stmts[i], chunk);
     }
 
-    emit_byte(chunk, OP_HALT, (struct NodeMetadata) {0});
+    emit_byte(chunk, OP_HALT, (struct NodeMetadata){0});
 }
 
 void compiler_free(struct Compiler *compiler) {

@@ -16,6 +16,7 @@ struct Stack {
 struct VM {
     size_t ip;
     struct Stack stack;
+    Value locals[256];
 };
 
 void vm_init(struct VM* vm);

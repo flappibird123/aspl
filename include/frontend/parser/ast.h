@@ -14,6 +14,7 @@ struct Expr;
 enum ExprType {
     EX_BINARY,
     EX_INT_LITERAL,
+    EX_VARIABLE
 };
 
 enum BinOpType {
@@ -33,11 +34,16 @@ struct IntegerLit {
     long value;
 };
 
+struct Variable {
+    char *name;
+};
+
 struct Expr {
     enum ExprType type;
     union {
         struct BinaryOp binop;
         struct IntegerLit intliteral;
+        struct Variable variable;
     } value;
 
     struct NodeMetadata metadata;
@@ -46,10 +52,33 @@ struct Expr {
 enum StmtType {
     STMT_PRINT,
     STMT_STMTEXPR,
+    STMT_VARDECL,
+    STMT_VARASSIGN,
+    STMT_BLOCK,
+};
+
+struct Block {
+    struct Stmt **stmts;
+    size_t count;
+};
+
+struct VarAssign {
+    char *name;
+    struct Expr *value;
 };
 
 struct ExprStmt {
     struct Expr *expr;
+};
+
+enum Type {
+    TYPE_INT,
+};
+
+struct VarDecl {
+    const char *name;
+    enum Type type;
+    struct Expr *init;
 };
 
 struct PrintStmt {
@@ -61,6 +90,9 @@ struct Stmt {
     union {
         struct ExprStmt exprstmt;
         struct PrintStmt printstmt;
+        struct VarDecl variabledecl;
+        struct VarAssign variableassignment;
+        struct Block block;
     } value;
 
     struct NodeMetadata metadata;

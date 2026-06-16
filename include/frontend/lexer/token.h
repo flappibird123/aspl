@@ -9,6 +9,9 @@ enum TokenType {
     TK_OPENPAREN,
     TK_CLOSEPAREN,
 
+    TK_OPENBRACE,
+    TK_CLOSEBRACE,
+
     TK_PLUS,
     TK_MINUS,
     TK_STAR,
@@ -17,6 +20,15 @@ enum TokenType {
     TK_PRINT,
 
     TK_SEMICOLON,
+    TK_COLON,
+
+    TK_EQUAL,
+
+    TK_IDENTIFIER,
+
+    TK_INT,
+
+    TK_LET,
 
     TK_EOF
 };
