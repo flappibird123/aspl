@@ -154,6 +154,12 @@ struct Token lexer_next(struct Lexer *lexer) {
     case '=':
         advance(lexer);
         return gen_token(lexer, TK_EQUAL);
+    case '{':
+        advance(lexer);
+        return gen_token(lexer, TK_OPENBRACE);
+    case '}':
+        advance(lexer);
+        return gen_token(lexer, TK_CLOSEBRACE);
     default:
         if (isdigit((unsigned char)c)) {
             advance(lexer);

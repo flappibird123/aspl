@@ -9,6 +9,9 @@ enum TokenType {
     TK_OPENPAREN,
     TK_CLOSEPAREN,
 
+    TK_OPENBRACE,
+    TK_CLOSEBRACE,
+
     TK_PLUS,
     TK_MINUS,
     TK_STAR,
