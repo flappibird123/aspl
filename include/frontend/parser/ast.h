@@ -54,6 +54,12 @@ enum StmtType {
     STMT_STMTEXPR,
     STMT_VARDECL,
     STMT_VARASSIGN,
+    STMT_BLOCK,
+};
+
+struct Block {
+    struct Stmt **stmts;
+    size_t count;
 };
 
 struct VarAssign {
@@ -86,6 +92,7 @@ struct Stmt {
         struct PrintStmt printstmt;
         struct VarDecl variabledecl;
         struct VarAssign variableassignment;
+        struct Block block;
     } value;
 
     struct NodeMetadata metadata;

@@ -11,6 +11,7 @@
 #include <stdbool.h>
 
 static struct Expr *parse_expression(struct Parser *parser);
+static struct Stmt *parse_stmt(struct Parser *parser);
 
 void parser_init(struct Parser *parser, const char *source, size_t source_len) {
     parser->lexer = NULL;
@@ -279,6 +280,37 @@ static struct Stmt *parse_varassign(struct Parser *parser) {
     return create_varassign(name, value, name_token);
 }
 
+static struct Stmt *create_block(struct Stmt **block_stmt, size_t count, struct Token tok) {
+    struct Stmt *stmt = malloc(sizeof(struct Stmt));
+    stmt->type = STMT_BLOCK;
+    stmt->metadata.line = tok.line;
+    stmt->metadata.column = tok.column;
+    stmt->value.block.stmts = block_stmt;
+    stmt->value.block.count = count;
+    return stmt;
+}
+
+static struct Stmt *parse_block(struct Parser *parser) {
+    struct Token tok = advance(parser);
+    struct Stmt **stmts = NULL;
+    size_t count = 0;
+    while (peek(parser).type != TK_CLOSEBRACE && peek(parser).type != TK_EOF) {
+        struct Stmt *stmt = parse_stmt(parser);
+        stmts = realloc(stmts, sizeof(struct Stmt*) * (count + 1));
+        stmts[count++] = stmt;
+
+        
+    }
+
+    if (peek(parser).type != TK_CLOSEBRACE) {
+        error(peek(parser), "expected '}'");
+        exit(1);
+    }
+
+    advance(parser);
+    return create_block(stmts, count, tok);
+}
+
 static struct Stmt *parse_stmt(struct Parser *parser) {
     switch (peek(parser).type) {
         case TK_PRINT: {
@@ -296,6 +328,9 @@ static struct Stmt *parse_stmt(struct Parser *parser) {
             struct Token start = advance(parser);
             struct Stmt *stmt = parse_vardecl(parser, start);
             return stmt;
+        }
+        case TK_OPENBRACE: {
+            return parse_block(parser);
         }
         case TK_IDENTIFIER: {
             if (peek1(parser).type == TK_EQUAL) {
