@@ -9,8 +9,10 @@
 
 void vm_init(struct VM* vm) {
     for (int i = 0; i < 256; i++) {
-        vm->locals[i] = 0;
-    }
+        vm->locals[i].as.int_value = 0;
+        vm->locals[i].as.bool_value = 0;
+        vm->locals[i].type = 0;
+    } 
 }
 
 static Byte read_byte(struct VM *vm, struct Chunk *chunk) {
@@ -42,6 +44,14 @@ static Value read_constant(struct VM *vm, struct Chunk *chunk) {
     return chunk->constants->data[index];
 }
 
+static Value make_bool(int value) {
+    return (Value) { .type = VT_BOOL, .as.bool_value = value != 0};
+}
+
+static Value make_int(int value) {
+    return (Value) { .type = VT_INT, .as.bool_value = value};
+}
+
 void vm_run(struct VM *vm, struct Chunk *chunk) {
     vm->stack.sp = 0;
     vm->ip = 0;
@@ -53,31 +63,42 @@ void vm_run(struct VM *vm, struct Chunk *chunk) {
         }
         switch (opcode) {
             case OP_IADD: {
+                // assume all opcodes beginning with i such as iadd and isub to operate on integers
+                // guarenteed by compiler
                 Value b = pop(vm);
                 Value a = pop(vm);
-                push(vm, a + b);
+                int i = b.as.int_value;
+                int j = a.as.int_value;
+                Value v = make_int(i + j);
+                push(vm, v);
                 break;
             }
             case OP_ISUB: {
                 Value b = pop(vm);
                 Value a = pop(vm);
-                push(vm, a - b);
+                int i = b.as.int_value;
+                int j = a.as.int_value;
+                Value v = make_int(i - j);
                 break;
             }
             case OP_IMUL: {
                 Value b = pop(vm);
                 Value a = pop(vm);
-                push(vm, a * b);
+                int i = b.as.int_value;
+                int j = a.as.int_value;
+                Value v = make_int(i * j);
                 break;
             }
             case OP_IDIV: {
                 Value b = pop(vm);
-                if (b == 0) {
+                if (b.as.int_value == 0) {
                     eprintf("division by 0\n");
                     exit(1);
                 }
                 Value a = pop(vm);
-                push(vm, a / b);
+                int i = b.as.int_value;
+                int j = a.as.int_value;
+                Value v = make_int(i / j);
                 break;
             }
             case OP_LOADCONST: {
@@ -87,7 +108,7 @@ void vm_run(struct VM *vm, struct Chunk *chunk) {
             }
             case OP_IPRINT: {
                 Value value = pop(vm);
-                int ivalue = (int)value;
+                int ivalue = value.as.int_value;
                 printf("%d\n", ivalue);
                 break;
             }
