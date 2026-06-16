@@ -22,19 +22,21 @@ void parser_init(struct Parser *parser, const char *source, size_t source_len) {
     parser->lexer = malloc(sizeof(struct Lexer));
     lexer_init(parser->lexer, source, source_len);
     parser->next = lexer_next(parser->lexer);
+    parser->lookahead1 = lexer_next(parser->lexer);
 }
 
 static struct Token peek(struct Parser *parser) { 
     return parser->next; 
 }
 
-static struct Token peekn(struct Parser *parser, size_t n) {
-
+static struct Token peek1(struct Parser *parser) {
+    return parser->lookahead1;
 }
 
 static struct Token advance(struct Parser *parser) {
     struct Token tmp = parser->next;
-    parser->next = lexer_next(parser->lexer);
+    parser->next = parser->lookahead1;
+    parser->lookahead1 = lexer_next(parser->lexer);
     return tmp;
 }
 
@@ -296,7 +298,11 @@ static struct Stmt *parse_stmt(struct Parser *parser) {
             return stmt;
         }
         case TK_IDENTIFIER: {
-            
+            if (peek1(parser).type == TK_EQUAL) {
+                return parse_varassign(parser);
+            }
+            // if not '=' then fall through to expression parsing 
+            // because we assume rn that if it isnt x = value; then x is being used in an expression
         }
         case TK_INTEGERLITERAL:
         case TK_OPENPAREN: {
