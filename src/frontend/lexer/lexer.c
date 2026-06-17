@@ -50,6 +50,13 @@ static char peek(struct Lexer *lexer) {
     return lexer->source[lexer->current];
 }
 
+static char peekn(struct Lexer *lexer, size_t n) {
+    if (lexer->current + n >= lexer->source_len) {
+        return EOF_CHAR;
+    }
+    return lexer->source[lexer->current + n];
+}
+
 static char advance(struct Lexer *lexer) {
     if (peek(lexer) == EOF_CHAR) {
         return EOF_CHAR;
@@ -152,6 +159,11 @@ struct Token lexer_next(struct Lexer *lexer) {
         advance(lexer);
         return gen_token(lexer, TK_COLON);
     case '=':
+        if (peekn(lexer, 1) == '=') {
+            advance(lexer);
+            advance(lexer);
+            return gen_token(lexer, TK_EQUAL_EQUAL);
+        }
         advance(lexer);
         return gen_token(lexer, TK_EQUAL);
     case '{':
@@ -160,6 +172,43 @@ struct Token lexer_next(struct Lexer *lexer) {
     case '}':
         advance(lexer);
         return gen_token(lexer, TK_CLOSEBRACE);
+    case '>':
+        if (peekn(lexer, 1) == '=') {
+            advance(lexer);
+            advance(lexer);
+            return gen_token(lexer, TK_GREATER_EQ);
+        }
+        advance(lexer);
+        return gen_token(lexer, TK_GREATER);
+    case '<':
+        if (peekn(lexer, 1) == '=') {
+            advance(lexer);
+            advance(lexer);
+            return gen_token(lexer, TK_LESS_EQ);
+        }
+        advance(lexer);
+        return gen_token(lexer, TK_LESS);
+    case '|':
+        if (peekn(lexer, 1) == '|') {
+            advance(lexer);
+            advance(lexer);
+            return gen_token(lexer, TK_OR);
+        }
+        eprintf("expected '|' but found: '%c'\n", c);
+    case '&':
+        if (peekn(lexer, 1) == '&') {
+            advance(lexer);
+            advance(lexer);
+            return gen_token(lexer, TK_AND);
+        }
+        eprintf("expected '&' but found: '%c'\n", c);
+    case '!':
+        if (peekn(lexer, 1) == '=') {
+            advance(lexer);
+            advance(lexer);
+            return gen_token(lexer, TK_BANG_EQ);
+        }
+        return gen_token(lexer, TK_BANG);
     default:
         if (isdigit((unsigned char)c)) {
             advance(lexer);
