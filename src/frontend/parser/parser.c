@@ -68,6 +68,18 @@ static void error(struct Token tok, const char *fmt, ...) {
     va_end(args);
 }
 
+static struct Expr *create_unary_op(struct Expr *operand, enum UnaryOpType op, struct Token tok) {
+    struct Expr *expr = malloc(sizeof(struct Expr));
+    expr->type = EX_UNARY;
+    
+    expr->metadata.line = tok.line;
+    expr->metadata.column = tok.column;
+
+    expr->value.unaryop.op = op;
+    expr->value.unaryop.expr = operand;
+    return expr;
+}
+
 static struct Expr *parse_primary(struct Parser *parser) {
     if (peek(parser).type == TK_INTEGERLITERAL) {
         struct Token tok = advance(parser);
@@ -136,12 +148,26 @@ static struct Stmt *create_printstmt(struct Expr *expr, struct Token tok) {
     return stmt;
 }
 
+static struct Expr *parse_unary(struct Parser *parser) {
+    if (peek(parser).type == TK_BANG || peek(parser).type == TK_MINUS) {
+        struct Token tok = advance(parser);
+        struct Expr *right = parse_unary(parser);
+
+        if (tok.type == TK_BANG) {
+            return create_unary_op(right, UN_NOT, tok);
+        } else {
+            return create_unary_op(right, UN_NEGATE, tok);
+        }
+    }
+    return parse_primary(parser);
+}
+
 static struct Expr *parse_factor(struct Parser *parser) {
-    struct Expr *left = parse_primary(parser);
+    struct Expr *left = parse_unary(parser);
     while (peek(parser).type == TK_STAR || peek(parser).type == TK_SLASH) {
         struct Token tok = advance(parser);
         enum TokenType type = tok.type;
-        struct Expr *right = parse_primary(parser);
+        struct Expr *right = parse_unary(parser);
         if (type == TK_STAR) {
             left = create_binary_op(left, right, BIN_MUL, tok);
         } else {
@@ -166,8 +192,65 @@ static struct Expr *parse_term(struct Parser *parser) {
     return left;
 }
 
+static struct Expr *parse_comparison(struct Parser* parser) {
+    struct Expr *left = parse_term(parser);
+    while (peek(parser).type == TK_LESS || peek(parser).type == TK_GREATER ||
+            peek(parser).type == TK_LESS_EQ || peek(parser).type == TK_GREATER_EQ) {
+        struct Token tok = advance(parser);
+        struct Expr *right = parse_term(parser);
+        if (tok.type == TK_LESS) {
+            left = create_binary_op(left, right, BIN_LESSER, tok);
+        } else if (tok.type == TK_GREATER) {
+            left = create_binary_op(left, right, BIN_GREATER, tok);
+        } else if (tok.type == TK_LESS_EQ) {
+            left = create_binary_op(left, right, BIN_LESSER_EQ, tok);
+        } else {
+            left = create_binary_op(left, right, BIN_GREATER_EQ, tok);
+        }
+    }
+    
+    return left;
+}
+
+static struct Expr *parse_equality(struct Parser *parser) {
+    struct Expr *left = parse_comparison(parser);
+    while (peek(parser).type == TK_EQUAL_EQUAL || peek(parser).type == TK_BANG_EQ) {
+        struct Token tok = advance(parser);
+        struct Expr *right = parse_comparison(parser);
+        if (tok.type == TK_EQUAL_EQUAL) {
+            left = create_binary_op(left, right, BIN_EQ_EQ, tok);
+        } else {
+            left = create_binary_op(left, right, BIN_BANG_EQ, tok);
+        }
+    }
+
+    return left;
+}
+
+static struct Expr *parse_and(struct Parser *parser) {
+    struct Expr *left = parse_equality(parser);
+    while (peek(parser).type == TK_AND) {
+        struct Token tok = advance(parser);
+        struct Expr *right = parse_equality(parser);
+        left = create_binary_op(left, right, BIN_AND, tok);
+    }
+
+    return left;
+}
+
+static struct Expr *parse_or(struct Parser *parser) {
+    struct Expr *left = parse_and(parser);
+    while (peek(parser).type == TK_OR) {
+        struct Token tok = advance(parser);
+        struct Expr *right = parse_and(parser);
+        left = create_binary_op(left, right, BIN_OR, tok);
+    }
+
+    return left;
+}
+
 static struct Expr *parse_expression(struct Parser *parser) {
-    return parse_term(parser);
+    return parse_or(parser);
 }
 
 static bool is_var_type(enum TokenType type) {

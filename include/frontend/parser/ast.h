@@ -14,7 +14,8 @@ struct Expr;
 enum ExprType {
     EX_BINARY,
     EX_INT_LITERAL,
-    EX_VARIABLE
+    EX_VARIABLE,
+    EX_UNARY
 };
 
 enum BinOpType {
@@ -22,12 +23,30 @@ enum BinOpType {
     BIN_SUB,
     BIN_MUL,
     BIN_DIV,
+    BIN_OR,
+    BIN_AND,
+    BIN_EQ_EQ,
+    BIN_BANG_EQ,
+    BIN_LESSER,
+    BIN_GREATER,
+    BIN_LESSER_EQ,
+    BIN_GREATER_EQ,
 };
 
 struct BinaryOp {
     enum BinOpType op; 
     struct Expr* left;
     struct Expr* right;
+};
+
+enum UnaryOpType {
+    UN_NOT,
+    UN_NEGATE,
+};
+
+struct UnaryOp {
+    enum UnaryOpType op;
+    struct Expr *expr;
 };
 
 struct IntegerLit {
@@ -44,6 +63,7 @@ struct Expr {
         struct BinaryOp binop;
         struct IntegerLit intliteral;
         struct Variable variable;
+        struct UnaryOp unaryop;
     } value;
 
     struct NodeMetadata metadata;
