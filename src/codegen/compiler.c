@@ -21,9 +21,6 @@ static void begin_scope(struct Compiler *compiler) {
 static void end_scope(struct Compiler *compiler) {
     compiler->local_count = compiler->scopes[compiler->scope_depth].start_slot;
     compiler->scope_depth--;
-    for (int i = 0; i < compiler->scopes->count; i++) {
-        free(compiler->scopes->symbols[i].name);
-    }
 }
 
 static void emit_byte(struct Chunk *chunk, Byte byte, struct NodeMetadata metadata) {
@@ -36,7 +33,7 @@ static int add_local(struct Compiler *compiler, const char *name) {
     int slot = compiler->local_count++;
 
     scope->symbols[scope->count++] = (struct Symbol){
-        .name = strdup(name),
+        .name = name,
         .slot = slot
     };
 
