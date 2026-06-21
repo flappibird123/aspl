@@ -14,6 +14,11 @@
 const char *KW_print;
 const char *KW_let;
 const char *KW_int;
+const char *KW_if;
+const char *KW_else;
+const char *KW_while;
+const char *KW_continue;
+const char *KW_break;
 
 
 void lexer_init(struct Lexer *lexer, const char *source, size_t source_len) {
@@ -30,6 +35,11 @@ void lexer_init(struct Lexer *lexer, const char *source, size_t source_len) {
         KW_print = str_intern("print");
         KW_let = str_intern("let");
         KW_int = str_intern("int");
+        KW_if = str_intern("if");
+        KW_else = str_intern("else");
+        KW_while = str_intern("while");
+        KW_continue = str_intern("continue");
+        KW_break = str_intern("break");
         #define HAS_INTERNALIZED_KEYWORDS 
     #endif  
 }
@@ -233,7 +243,18 @@ struct Token lexer_next(struct Lexer *lexer) {
                 return gen_token(lexer, TK_INT);
             } else if (s == KW_let) {
                 return gen_token(lexer, TK_LET);
-            } else {
+            } else if (s == KW_break) {
+                return gen_token(lexer, TK_BREAK);
+            } else if (s == KW_continue) {
+                return gen_token(lexer, TK_CONTINUE);
+            } else if (s == KW_else) {
+                return gen_token(lexer, TK_ELSE);
+            } else if (s == KW_if) {
+                return gen_token(lexer, TK_IF);
+            } else if (s == KW_while) {
+                return gen_token(lexer, TK_WHILE);
+            }
+            else {
                 return gen_token(lexer, TK_IDENTIFIER);
             }
         } else {

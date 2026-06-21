@@ -38,6 +38,13 @@ enum TokenType {
 
     TK_INT,
 
+    TK_IF,
+    TK_ELSE,
+
+    TK_WHILE,
+    TK_BREAK,
+    TK_CONTINUE,
+
     TK_LET,
 
     TK_EOF
