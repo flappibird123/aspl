@@ -253,8 +253,7 @@ struct Token lexer_next(struct Lexer *lexer) {
                 return gen_token(lexer, TK_IF);
             } else if (s == KW_while) {
                 return gen_token(lexer, TK_WHILE);
-            }
-            else {
+            } else {
                 return gen_token(lexer, TK_IDENTIFIER);
             }
         } else {
