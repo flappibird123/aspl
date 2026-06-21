@@ -10,6 +10,7 @@ struct NodeMetadata {
 };
 
 struct Expr;
+struct Stmt;
 
 enum ExprType {
     EX_BINARY,
@@ -75,6 +76,10 @@ enum StmtType {
     STMT_VARDECL,
     STMT_VARASSIGN,
     STMT_BLOCK,
+    STMT_IF,
+    STMT_WHILE,
+    STMT_BREAK,
+    STMT_CONTINUE,
 };
 
 struct Block {
@@ -87,12 +92,23 @@ struct VarAssign {
     struct Expr *value;
 };
 
+struct WhileStmt {
+    struct Expr *condition;
+    struct Stmt *body;
+};
+
 struct ExprStmt {
     struct Expr *expr;
 };
 
 enum Type {
     TYPE_INT,
+};
+
+struct If {
+    struct Expr *condition;
+    struct Stmt *then_branch;
+    struct Stmt *else_branch;
 };
 
 struct VarDecl {
@@ -104,6 +120,14 @@ struct VarDecl {
 struct PrintStmt {
     struct Expr *expr;
 };
+
+struct Continue {
+
+};
+
+struct Break {
+
+};
 struct Stmt {
     enum StmtType type;
 
@@ -113,6 +137,10 @@ struct Stmt {
         struct VarDecl variabledecl;
         struct VarAssign variableassignment;
         struct Block block;
+        struct If ifstmt;
+        struct WhileStmt whilestmt;
+        struct Break breakstmt;
+        struct Continue continuestmt;
     } value;
 
     struct NodeMetadata metadata;

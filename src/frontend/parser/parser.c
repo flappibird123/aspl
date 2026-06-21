@@ -58,12 +58,52 @@ static struct Expr *create_integer_literal(struct Parser *parser, struct Token t
     return expr;
 }
 
-static void error(struct Token tok, const char *fmt, ...) {
-    fprintf(stderr, "%s%zu:%zu: %serror: %s", ANSI_RESET, tok.line, tok.column, ANSI_RED, ANSI_RESET);
+static void error(struct Parser *parser, struct Token tok, const char *fmt, ...) {
     va_list args;
+
+    fprintf(stderr, "%s%zu:%zu: %s%serror: %s", ANSI_RESET, tok.line + 1, tok.column + 1, ANSI_BRED, ANSI_BOLD, ANSI_RESET);
 
     va_start(args, fmt);
     vfprintf(stderr, fmt, args);
+    fprintf(stderr, "\n");
+
+
+    size_t count = 1;
+    size_t n = tok.line;
+    while (n >= 10) {
+        n /= 10;
+        count++;
+    }
+
+    for (size_t i = 0; i < count + 1; i++) {
+        eprintf(" ");
+    }
+    eprintf("|\n");
+
+    eprintf("%zu | ", tok.line + 1);
+
+    const char *line_start = parser->lexer->source + tok.offest;
+    while (line_start > parser->lexer->source && line_start[-1] != '\n') {
+        line_start--;
+    }
+
+    const char *line_end = parser->lexer->source + tok.offest;
+    while (*line_end && *line_end != '\n') {
+        line_end++;
+    }
+
+    size_t line_len = line_end - line_start;
+
+    printf("%.*s\n", (int)line_len, line_start);
+
+    for (size_t i = 0; i < count + 1; i++) {
+        eprintf(" ");
+    }
+    eprintf("|");
+    for (size_t i = 0; i < tok.column + 1; i++) {
+        eprintf(" ");
+    }
+    eprintf("%s%s^%s\n", ANSI_RESET, ANSI_YELLOW, ANSI_RESET);
 
     va_end(args);
 }
@@ -88,7 +128,7 @@ static struct Expr *parse_primary(struct Parser *parser) {
         advance(parser);
         struct Expr *expr = parse_expression(parser);
         if (peek(parser).type != TK_CLOSEPAREN) {
-            error(peek(parser), "expected ')'\n");
+            error(parser, peek(parser), "expected ')'");
             exit(1);
         }
         advance(parser);
@@ -111,7 +151,7 @@ static struct Expr *parse_primary(struct Parser *parser) {
         expr->metadata.column = tok.column;
         return expr;
     }else {
-        error(peek(parser), "unexpected token\n");
+        error(parser, peek(parser), "unexpected token");
         exit(1);
     }
 }
@@ -277,7 +317,7 @@ static struct Stmt *parse_vardecl(struct Parser* parser, struct Token start) {
     struct Token tok = advance(parser);
 
     if (tok.type != TK_IDENTIFIER) {
-        error(tok, "expected identifier\n");
+        error(parser, tok, "expected identifier");
         exit(1);
     }
     char *var_name = malloc(tok.length + 1);
@@ -286,7 +326,7 @@ static struct Stmt *parse_vardecl(struct Parser* parser, struct Token start) {
 
     // force type annotation
     if (peek(parser).type != TK_COLON) {
-        error(peek(parser), "expected explicit type annotation\n");
+        error(parser, peek(parser), "expected explicit type annotation");
         exit(1);
     }
 
@@ -294,7 +334,7 @@ static struct Stmt *parse_vardecl(struct Parser* parser, struct Token start) {
     advance(parser);
 
     if (!is_var_type(peek(parser).type)) {
-        error(peek(parser), "expected type after ':'\n");
+        error(parser, peek(parser), "expected type after ':'");
         exit(1);
     }
 
@@ -305,7 +345,7 @@ static struct Stmt *parse_vardecl(struct Parser* parser, struct Token start) {
     if (type == TK_INT) {
         var_type = TYPE_INT;
     } else {
-        error(tok, "unexpected tokentype: %d\n", type);
+        error(parser, tok, "unexpected tokentype: %d", type);
         exit(1);
     }
 
@@ -313,14 +353,14 @@ static struct Stmt *parse_vardecl(struct Parser* parser, struct Token start) {
         advance(parser);
         struct Expr *expr = parse_expression(parser);
         if (peek(parser).type != TK_SEMICOLON) {
-            error(peek(parser), "expected ';'\n");
+            error(parser, peek(parser), "expected ';'");
             exit(1);
         }
         advance(parser);
         return create_vardecl(var_name, var_type, expr, start);
     } else {
         if (peek(parser).type != TK_SEMICOLON) {
-            error(peek(parser), "unexpected token: %d\n", peek(parser).type);
+            error(parser, peek(parser), "unexpected token: %d", peek(parser).type);
             exit(1);
         }
         advance(parser);
@@ -342,7 +382,8 @@ static struct Stmt *parse_varassign(struct Parser *parser) {
     struct Token name_token = advance(parser);
 
     if (peek(parser).type != TK_EQUAL) {
-        error(peek(parser), "expected '=' after identifier");
+        error(parser, peek(parser), "expected '=' after identifier");
+        exit(1);
     }
 
     advance(parser); // consume =
@@ -351,7 +392,8 @@ static struct Stmt *parse_varassign(struct Parser *parser) {
     struct Expr *value = parse_expression(parser);
 
     if (peek(parser).type != TK_SEMICOLON) {
-        error(peek(parser), "expected ';\n");
+        error(parser, peek(parser), "expected ';");
+        exit(1);
     }
 
     advance(parser);
@@ -386,12 +428,149 @@ static struct Stmt *parse_block(struct Parser *parser) {
     }
 
     if (peek(parser).type != TK_CLOSEBRACE) {
-        error(peek(parser), "expected '}'");
+        error(parser, peek(parser), "expected '}'");
         exit(1);
     }
 
     advance(parser);
     return create_block(stmts, count, tok);
+}
+
+static struct Stmt *create_ifstmt(struct Expr *cond, struct Stmt *then_branch,
+                                  struct Stmt *else_branch,
+                                  struct Token tok) {
+    struct Stmt *stmt = malloc(sizeof(struct Stmt));
+    stmt->type = STMT_IF;
+    stmt->metadata.line = tok.line;
+    stmt->metadata.column = tok.column;
+
+    stmt->value.ifstmt.condition = cond;
+    stmt->value.ifstmt.then_branch = then_branch;
+    stmt->value.ifstmt.else_branch = else_branch;
+
+    return stmt;
+}
+
+static struct Stmt *create_whilestmt(struct Expr *cond,
+                                     struct Stmt *body,
+                                     struct Token tok) {
+    struct Stmt *stmt = malloc(sizeof(struct Stmt));
+    stmt->type = STMT_WHILE;
+    stmt->metadata.line = tok.line;
+    stmt->metadata.column = tok.column;
+
+    stmt->value.whilestmt.condition = cond;
+    stmt->value.whilestmt.body = body;
+
+    return stmt;
+}
+
+static struct Stmt *create_breakstmt(struct Token tok) {
+    struct Stmt *stmt = malloc(sizeof(struct Stmt));
+    stmt->type = STMT_BREAK;
+    stmt->metadata.line = tok.line;
+    stmt->metadata.column = tok.column;
+    return stmt;
+}
+
+static struct Stmt *create_continuestmt(struct Token tok) {
+    struct Stmt *stmt = malloc(sizeof(struct Stmt));
+    stmt->type = STMT_CONTINUE;
+    stmt->metadata.line = tok.line;
+    stmt->metadata.column = tok.column;
+    return stmt;
+}
+
+static struct Stmt *parse_if_stmt(struct Parser *parser) {
+    struct Token start = advance(parser);
+    if (peek(parser).type != TK_OPENPAREN) {
+        error(parser, peek(parser), "expected '(' after keyword 'if'");
+        exit(1);
+    }
+    advance(parser);
+
+    struct Expr *condition = parse_expression(parser);
+
+    if (peek(parser).type != TK_CLOSEPAREN) {
+        error(parser, peek(parser), "expected ')' after expression");
+        exit(1);
+    }
+
+    advance(parser);
+
+    struct Stmt *then = NULL;
+
+    if (peek(parser).type == TK_OPENBRACE) {
+        then = parse_block(parser);
+    } else {
+        then = parse_stmt(parser);
+    }
+
+    struct Stmt *else_branch = NULL;
+
+    if (peek(parser).type == TK_ELSE) {
+        advance(parser);
+
+        else_branch = parse_stmt(parser);
+    }
+
+    return create_ifstmt(condition, then, else_branch, start);
+}
+
+static struct Stmt *parse_while_stmt(struct Parser *parser) {
+    struct Token start = advance(parser);
+
+    if (peek(parser).type != TK_OPENPAREN) {
+        error(parser, peek(parser), "expected '(' after while");
+        exit(1);
+    }
+
+    advance(parser);
+
+    struct Expr *condition = parse_expression(parser);
+
+    if (peek(parser).type != TK_CLOSEPAREN) {
+        error(parser, peek(parser), "expected ')'");
+        exit(1);
+    } 
+
+    advance(parser);
+
+    struct Stmt *body = NULL;
+
+    if (peek(parser).type == TK_OPENBRACE) {
+        body = parse_block(parser);
+    } else {
+        body = parse_stmt(parser);
+    }
+
+    return create_whilestmt(condition, body, start);
+}
+
+static struct Stmt *parse_break_stmt(struct Parser *parser) {
+    struct Token start = advance(parser); 
+
+    if (peek(parser).type != TK_SEMICOLON) {
+        error(parser, start, "expected ';'");
+        exit(1);
+    }
+    
+    advance(parser);
+
+    return create_breakstmt(start);
+}
+
+static struct Stmt *parse_continue_stmt(struct Parser *parser) {
+    struct Token start = advance(parser);
+
+    if (peek(parser).type != TK_SEMICOLON) {
+        error(parser, start, "expected ';'");
+        exit(1);
+    }
+
+    advance(parser);
+
+    return create_continuestmt(start);
 }
 
 static struct Stmt *parse_stmt(struct Parser *parser) {
@@ -401,7 +580,7 @@ static struct Stmt *parse_stmt(struct Parser *parser) {
             struct Expr *expr = parse_expression(parser);
             struct Stmt *stmt = create_printstmt(expr, start);
             if (peek(parser).type != TK_SEMICOLON) {
-                error(peek(parser), "expected ';'\n");
+                error(parser, peek(parser), "expected ';'");
                 exit(1);
             }
             advance(parser);
@@ -414,6 +593,18 @@ static struct Stmt *parse_stmt(struct Parser *parser) {
         }
         case TK_OPENBRACE: {
             return parse_block(parser);
+        }
+        case TK_IF: {
+            return parse_if_stmt(parser);
+        }
+        case TK_WHILE: {
+            return parse_while_stmt(parser);
+        }
+        case TK_BREAK: {
+            return parse_break_stmt(parser);
+        }
+        case TK_CONTINUE: {
+            return parse_continue_stmt(parser);
         }
         case TK_IDENTIFIER: {
             if (peek1(parser).type == TK_EQUAL) {
@@ -428,14 +619,14 @@ static struct Stmt *parse_stmt(struct Parser *parser) {
             struct Expr *expr = parse_expression(parser);
             struct Stmt *stmt = create_exprstmt(expr, start);
             if (peek(parser).type != TK_SEMICOLON) {
-                error(peek(parser), "expected ';'\n");
+                error(parser, peek(parser), "expected ';'");
                 exit(1);
             }
             advance(parser);
             return stmt;
         }
         default:
-            error(peek(parser), "unexpected token at statement start");
+            error(parser, peek(parser), "unexpected token at statement start");
             exit(1);
     }
 }

@@ -87,13 +87,6 @@ static struct Token gen_token(struct Lexer *lexer, enum TokenType type) {
                           lexer->line, lexer->start_column};
 }
 
-static char peekn(struct Lexer *lexer, size_t n) {
-    if (lexer->current + n >= lexer->source_len) {
-        return EOF_CHAR;
-    }
-    return lexer->source[lexer->current + n];
-}
-
 static bool skip_whitespace(struct Lexer *lexer) {
     bool modified = false;
     while (!is_at_end(lexer) && isspace((unsigned char)peek(lexer))) {
