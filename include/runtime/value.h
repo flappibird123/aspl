@@ -3,17 +3,9 @@
 
 #include <stddef.h>
 
-enum ValueType {
-    VT_INT,
-    VT_BOOL
-};
-
-typedef struct {
-    enum ValueType type;
-    union {
-        int int_value;
-        int bool_value;
-    } as;
+typedef union {
+    int int_value;
+    int bool_value;
 } Value;
 struct ValueArray {
     Value *data;

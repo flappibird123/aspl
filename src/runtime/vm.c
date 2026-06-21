@@ -9,9 +9,8 @@
 
 void vm_init(struct VM* vm) {
     for (int i = 0; i < 256; i++) {
-        vm->locals[i].as.int_value = 0;
-        vm->locals[i].as.bool_value = 0;
-        vm->locals[i].type = 0;
+        vm->locals[i].int_value = 0;
+        vm->locals[i].bool_value = 0;
     } 
 }
 
@@ -45,11 +44,11 @@ static Value read_constant(struct VM *vm, struct Chunk *chunk) {
 }
 
 static Value make_bool(int value) {
-    return (Value) { .type = VT_BOOL, .as.bool_value = value != 0};
+    return (Value) { .bool_value = value != 0};
 }
 
 static Value make_int(int value) {
-    return (Value) { .type = VT_INT, .as.bool_value = value};
+    return (Value) { .int_value = value};
 }
 
 void vm_run(struct VM *vm, struct Chunk *chunk) {
@@ -67,8 +66,8 @@ void vm_run(struct VM *vm, struct Chunk *chunk) {
                 // guarenteed by compiler
                 Value b = pop(vm);
                 Value a = pop(vm);
-                int i = b.as.int_value;
-                int j = a.as.int_value;
+                int i = a.int_value;
+                int j = b.int_value;
                 Value v = make_int(i + j);
                 push(vm, v);
                 break;
@@ -76,29 +75,32 @@ void vm_run(struct VM *vm, struct Chunk *chunk) {
             case OP_ISUB: {
                 Value b = pop(vm);
                 Value a = pop(vm);
-                int i = b.as.int_value;
-                int j = a.as.int_value;
+                int i = a.int_value;
+                int j = b.int_value;
                 Value v = make_int(i - j);
+                push(vm, v);
                 break;
             }
             case OP_IMUL: {
                 Value b = pop(vm);
                 Value a = pop(vm);
-                int i = b.as.int_value;
-                int j = a.as.int_value;
+                int i = a.int_value;
+                int j = b.int_value;
                 Value v = make_int(i * j);
+                push(vm, v);
                 break;
             }
             case OP_IDIV: {
                 Value b = pop(vm);
-                if (b.as.int_value == 0) {
+                if (b.int_value == 0) {
                     eprintf("division by 0\n");
                     exit(1);
                 }
                 Value a = pop(vm);
-                int i = b.as.int_value;
-                int j = a.as.int_value;
+                int i = a.int_value;
+                int j = b.int_value;
                 Value v = make_int(i / j);
+                push(vm, v);
                 break;
             }
             case OP_LOADCONST: {
@@ -108,18 +110,94 @@ void vm_run(struct VM *vm, struct Chunk *chunk) {
             }
             case OP_IPRINT: {
                 Value value = pop(vm);
-                int ivalue = value.as.int_value;
+                int ivalue = value.int_value;
                 printf("%d\n", ivalue);
                 break;
             }
-            case OP_LOADLOCAL: {
+            case OP_ILOADLOCAL: {
                 Byte slot = read_byte(vm, chunk);
                 push(vm, vm->locals[slot]);
                 break;
             }
-            case OP_STORELOCAL: {
+            case OP_ISTORELOCAL: {
                 Byte slot = read_byte(vm, chunk);
                 vm->locals[slot] = pop(vm);
+                break;
+            }
+            case OP_ICMP_EQ: {
+                Value b = pop(vm);
+                Value a = pop(vm);
+                push(vm, make_bool(a.int_value == b.int_value));
+                break;
+            }
+            case OP_ICMP_NE: {
+                Value b = pop(vm);
+                Value a = pop(vm);
+                push(vm, make_bool(a.int_value != b.int_value));
+                break;
+            }
+            case OP_ICMP_LT: {
+                Value b = pop(vm);
+                Value a = pop(vm);
+                push(vm, make_bool(a.int_value < b.int_value));
+                break;
+            }
+            case OP_ICMP_LE: {
+                Value b = pop(vm);
+                Value a = pop(vm);
+                push(vm, make_bool(a.int_value <= b.int_value));
+                break;
+            }
+            case OP_ICMP_GT: {
+                Value b = pop(vm);
+                Value a = pop(vm);
+                push(vm, make_bool(a.int_value > b.int_value));
+                break;
+            }
+            case OP_ICMP_GE: {
+                Value b = pop(vm);
+                Value a = pop(vm);
+                push(vm, make_bool(a.int_value >= b.int_value));
+                break;
+            }
+            case OP_BNOT: {
+                Value a = pop(vm);
+                push(vm, make_bool(a.bool_value == 0));
+                break;
+            }
+            case OP_BAND: {
+                Value b = pop(vm);
+                Value a = pop(vm);
+                if (a.bool_value > 0 && b.bool_value > 0) {
+                    push(vm, make_bool(1));
+                } else {
+                    push(vm, make_bool(0));
+                }
+                break;
+            }
+            case OP_BOR: {
+                Value b = pop(vm);
+                Value a = pop(vm);
+                if (a.bool_value > 0 || b.bool_value > 0) {
+                    push(vm, make_bool(1));
+                } else {
+                    push(vm, make_bool(0));
+                }
+                break;
+            }
+            case OP_JMP: {
+                // vm reinterpret unsigned operand as signed to allow for backwards jumps
+                int8_t offset = (int8_t)read_byte(vm, chunk);
+                vm->ip += offset;
+                break;
+            }
+            case OP_JIF: {
+                Value v = pop(vm);
+                // vm reinterpret unsigned operand as signed to allow for backwards jumps
+                int8_t offset = (int8_t)read_byte(vm, chunk);
+                if (v.bool_value == 0) {
+                    vm->ip += offset;
+                }
                 break;
             }
             default: {
