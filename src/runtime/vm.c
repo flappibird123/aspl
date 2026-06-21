@@ -200,6 +200,15 @@ void vm_run(struct VM *vm, struct Chunk *chunk) {
                 }
                 break;
             }
+            case OP_INEGATE: {
+                Value v = pop(vm);
+                push(vm, make_int(-v.int_value));
+                break;
+            }
+            case OP_POP: {
+                pop(vm);
+                break;
+            }
             default: {
                 eprintf("unknown opcode: %d", opcode);
                 exit(1);

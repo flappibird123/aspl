@@ -21,6 +21,9 @@ static void begin_scope(struct Compiler *compiler) {
 static void end_scope(struct Compiler *compiler) {
     compiler->local_count = compiler->scopes[compiler->scope_depth].start_slot;
     compiler->scope_depth--;
+    for (int i = 0; i < compiler->scopes->count; i++) {
+        free(compiler->scopes->symbols[i].name);
+    }
 }
 
 static void emit_byte(struct Chunk *chunk, Byte byte, struct NodeMetadata metadata) {
@@ -77,6 +80,30 @@ static void compile_binary(struct Compiler *compiler, struct Expr *expr, struct 
         case BIN_DIV: 
             emit_byte(chunk, OP_IDIV, expr->metadata); 
             break;
+        case BIN_EQ_EQ:
+            emit_byte(chunk, OP_ICMP_EQ, expr->metadata);
+            break;
+        case BIN_BANG_EQ:
+            emit_byte(chunk, OP_ICMP_NE, expr->metadata);
+            break;
+        case BIN_LESSER:
+            emit_byte(chunk, OP_ICMP_LT, expr->metadata);
+            break;
+        case BIN_LESSER_EQ:
+            emit_byte(chunk, OP_ICMP_LE, expr->metadata);
+            break;
+        case BIN_GREATER:
+            emit_byte(chunk, OP_ICMP_GT, expr->metadata);
+            break;
+        case BIN_GREATER_EQ:
+            emit_byte(chunk, OP_ICMP_GE, expr->metadata);
+            break;
+        case BIN_AND:
+            emit_byte(chunk, OP_BAND, expr->metadata);
+            break;
+        case BIN_OR:
+            emit_byte(chunk, OP_BOR, expr->metadata);
+            break;
     }
 }
 
@@ -84,7 +111,7 @@ static void compile_expr(struct Compiler *compiler, struct Expr *expr, struct Ch
     switch (expr->type) {
 
         case EX_INT_LITERAL:
-            compile_literal(expr->value.intliteral.value, chunk, expr->metadata);
+            compile_literal((Value){ .int_value = expr->value.intliteral.value}, chunk, expr->metadata);
             break;
 
         case EX_BINARY:
@@ -98,8 +125,23 @@ static void compile_expr(struct Compiler *compiler, struct Expr *expr, struct Ch
                 exit(1);
             }
 
-            emit_byte(chunk, OP_LOADLOCAL, expr->metadata);
+            emit_byte(chunk, OP_ILOADLOCAL, expr->metadata);
             emit_byte(chunk, slot, expr->metadata);
+            break;
+        }
+        case EX_UNARY: {
+            compile_expr(compiler, expr->value.unaryop.expr, chunk);
+
+            switch (expr->value.unaryop.op) {
+                case UN_NOT:
+                    emit_byte(chunk, OP_BNOT, expr->metadata);
+                    break;
+
+                case UN_NEGATE:
+                    emit_byte(chunk, OP_INEGATE, expr->metadata);
+                    break;
+            }
+
             break;
         }
         default:
@@ -117,17 +159,17 @@ static void compile_stmt(struct Compiler *compiler, struct Stmt *stmt, struct Ch
             break;
         case STMT_STMTEXPR:
             compile_expr(compiler, stmt->value.exprstmt.expr, chunk);
+            emit_byte(chunk, OP_POP, stmt->metadata);
             break;
         case STMT_VARDECL: {
             int slot = add_local(compiler, stmt->value.variabledecl.name);
             if (stmt->value.variabledecl.init != NULL) {
                 compile_expr(compiler, stmt->value.variabledecl.init, chunk);
             } else {
-                emit_byte(chunk, OP_LOADCONST, stmt->metadata);
-                emit_byte(chunk, 0, stmt->metadata); // default value
+                compile_literal((Value){ .int_value = 0 }, chunk, stmt->metadata);
             }
 
-            emit_byte(chunk, OP_STORELOCAL, stmt->metadata);
+            emit_byte(chunk, OP_ISTORELOCAL, stmt->metadata);
             emit_byte(chunk, slot, stmt->metadata);
             break;
         }
@@ -138,7 +180,7 @@ static void compile_stmt(struct Compiler *compiler, struct Stmt *stmt, struct Ch
                 eprintf("Undeclared variable: %s\n", stmt->value.variableassignment.name);
                 exit(1);
             }
-            emit_byte(chunk, OP_STORELOCAL, stmt->metadata);
+            emit_byte(chunk, OP_ISTORELOCAL, stmt->metadata);
             emit_byte(chunk, slot, stmt->metadata);
             break;
         }
@@ -157,7 +199,7 @@ static void compile_stmt(struct Compiler *compiler, struct Stmt *stmt, struct Ch
 
 
 void compiler_compile(struct Compiler *compiler, struct Program *program, struct Chunk *chunk) {
-    compiler->scope_depth = 0;
+    compiler->scope_depth = -1;
     begin_scope(compiler);
     for (size_t i = 0; i < program->size; i++) {
         compile_stmt(compiler, program->stmts[i], chunk);

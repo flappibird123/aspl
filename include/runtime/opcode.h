@@ -47,6 +47,12 @@ enum OpCode {
     // jump if not equal i.e. if the value at the top of the stack is false
     // takes uint8_t operand of offset to jump to relative to current position
     OP_JIF = 19,
+    // integer negation
+    OP_INEGATE = 20,
+    // pop 
+    // pops top value off the stack and discards the results
+    // used in stmtexpr
+    OP_POP = 21,
 };
 
 #endif // RUNTIME_OPCODE_H

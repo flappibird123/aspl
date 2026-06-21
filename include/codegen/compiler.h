@@ -20,7 +20,7 @@ struct Scope {
 
 struct Compiler {
     struct Scope scopes[MAX_SCOPE];
-    size_t scope_depth;
+    int scope_depth;
 
     int local_count;
 };
