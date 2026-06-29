@@ -12,6 +12,16 @@ void compiler_init(struct Compiler *compiler) {
     compiler->local_count = 0;
 }
 
+static size_t emit_jump(struct Chunk *chunk, Byte opcode) {
+    emit_byte(chunk, opcode, (struct NodeMetadata){0});
+    emit_byte(chunk, 0, (struct NodeMetadata){0}); // placeholder
+    return chunk->bytecode->size - 1; // position of operand
+}
+
+static void patch_jump(struct Chunk *chunk, size_t offset, size_t target) {
+    chunk->bytecode->data[offset] = (Byte)(target - offset - 1);
+}
+
 static void begin_scope(struct Compiler *compiler) {
     compiler->scope_depth++;
     compiler->scopes[compiler->scope_depth].count = 0;
@@ -179,6 +189,46 @@ static void compile_stmt(struct Compiler *compiler, struct Stmt *stmt, struct Ch
             }
             emit_byte(chunk, OP_ISTORELOCAL, stmt->metadata);
             emit_byte(chunk, slot, stmt->metadata);
+            break;
+        }
+        case STMT_IF: {
+            compile_expr(compiler, stmt->value.ifstmt.condition, chunk);
+
+            size_t jump_to_else = emit_jump(chunk, OP_JIF);
+
+            compile_stmt(compiler, stmt->value.ifstmt.then_branch, chunk);
+
+            size_t jump_to_end = emit_jump(chunk, OP_JMP);
+
+            size_t else_pos = chunk->bytecode->size;
+
+            if (stmt->value.ifstmt.else_branch) {
+                compile_stmt(compiler, stmt->value.ifstmt.else_branch, chunk);
+            }
+
+            size_t end_pos = chunk->bytecode->size;
+
+            patch_jump(chunk, jump_to_else, else_pos);
+            patch_jump(chunk, jump_to_end, end_pos);
+
+            break;
+        }
+        case STMT_WHILE: {
+            size_t loop_start = chunk->bytecode->size;
+
+            compile_expr(compiler, stmt->value.whilestmt.condition, chunk);
+
+            size_t exit_jump = emit_jump(chunk, OP_JIF);
+
+            compile_stmt(compiler, stmt->value.whilestmt.body, chunk);
+
+            emit_byte(chunk, OP_JMP, stmt->metadata);
+            emit_byte(chunk, loop_start, stmt->metadata);
+
+            size_t loop_end = chunk->bytecode->size;
+
+            patch_jump(chunk, exit_jump, loop_end);
+
             break;
         }
         case STMT_BLOCK: {
