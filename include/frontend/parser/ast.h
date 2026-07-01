@@ -16,7 +16,12 @@ enum ExprType {
     EX_BINARY,
     EX_INT_LITERAL,
     EX_VARIABLE,
-    EX_UNARY
+    EX_UNARY,
+    EX_ERROR,
+};
+
+struct ExprError {
+    const char *msg;
 };
 
 enum BinOpType {
@@ -65,6 +70,7 @@ struct Expr {
         struct IntegerLit intliteral;
         struct Variable variable;
         struct UnaryOp unaryop;
+        struct ExprError error;
     } value;
 
     struct NodeMetadata metadata;
@@ -80,6 +86,11 @@ enum StmtType {
     STMT_WHILE,
     STMT_BREAK,
     STMT_CONTINUE,
+    STMT_ERROR,
+};
+
+struct StmtError {
+    const char *msg;
 };
 
 struct Block {
@@ -141,6 +152,7 @@ struct Stmt {
         struct WhileStmt whilestmt;
         struct Break breakstmt;
         struct Continue continuestmt;
+        struct StmtError error;
     } value;
 
     struct NodeMetadata metadata;

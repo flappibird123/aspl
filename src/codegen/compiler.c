@@ -7,6 +7,8 @@
 #include <stdlib.h>
 
 static void compile_expr(struct Compiler *compiler, struct Expr *expr, struct Chunk *chunk);
+static void emit_byte(struct Chunk *chunk, Byte byte, struct NodeMetadata metadata);
+
 
 void compiler_init(struct Compiler *compiler) {
     compiler->local_count = 0;

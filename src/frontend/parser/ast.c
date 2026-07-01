@@ -26,6 +26,9 @@ static void free_expr(struct Expr *expr) {
             free(expr->value.variable.name);
             break;
 
+        case EX_ERROR:
+            free(expr->value.error.msg);
+
         default:
             break;
     }
@@ -79,6 +82,10 @@ static void free_stmt(struct Stmt *stmt) {
 
         case STMT_CONTINUE:
             break;
+
+        case STMT_ERROR: 
+            free(stmt->value.error.msg);
+            break;            
 
         default:
             break;

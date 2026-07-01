@@ -24,6 +24,7 @@ void parser_init(struct Parser *parser, const char *source, size_t source_len) {
     lexer_init(parser->lexer, source, source_len);
     parser->next = lexer_next(parser->lexer);
     parser->lookahead1 = lexer_next(parser->lexer);
+    parser->error_count = 0;
 }
 
 static struct Token peek(struct Parser *parser) { 
@@ -106,6 +107,54 @@ static void error(struct Parser *parser, struct Token tok, const char *fmt, ...)
     eprintf("%s%s^%s\n", ANSI_RESET, ANSI_YELLOW, ANSI_RESET);
 
     va_end(args);
+
+    parser->error_count++;
+}
+
+static void synchronize(struct Parser *parser) {
+    while (peek(parser).type != TK_EOF) {
+        if (peek(parser).type == TK_SEMICOLON) {
+            advance(parser);
+            return;
+        }
+
+        switch (peek(parser).type) {
+            case TK_IF:
+            case TK_PRINT:
+            case TK_WHILE:
+            case TK_BREAK:
+            case TK_CONTINUE:
+            case TK_LET:
+            case TK_ELSE:
+                return;
+            default: 
+                advance(parser);
+        }
+    }
+}
+
+static struct Expr *create_expr_err(struct Token tok, const char* msg) {
+    struct Expr *expr = malloc(sizeof(struct Expr));
+    expr->type = EX_ERROR;
+
+    expr->metadata.line = tok.line;
+    expr->metadata.column = tok.column;
+
+    expr->value.error.msg = msg;
+
+    return expr;
+}
+
+static struct Stmt *create_stmt_err(struct Token tok, const char *msg) {
+    struct Stmt *stmt = malloc(sizeof(struct Stmt));
+    stmt->type = STMT_ERROR;
+
+    stmt->metadata.line = tok.line;
+    stmt->metadata.column = tok.column;
+
+    stmt->value.error.msg = msg;
+
+    return stmt;
 }
 
 static struct Expr *create_unary_op(struct Expr *operand, enum UnaryOpType op, struct Token tok) {
@@ -128,8 +177,9 @@ static struct Expr *parse_primary(struct Parser *parser) {
         advance(parser);
         struct Expr *expr = parse_expression(parser);
         if (peek(parser).type != TK_CLOSEPAREN) {
-            error(parser, peek(parser), "expected ')'");
-            exit(1);
+            const char *msg = "expected ')'";
+            error(parser, peek(parser), msg);
+            return create_expr_err(peek(parser), msg);
         }
         advance(parser);
         
@@ -151,8 +201,9 @@ static struct Expr *parse_primary(struct Parser *parser) {
         expr->metadata.column = tok.column;
         return expr;
     }else {
-        error(parser, peek(parser), "unexpected token");
-        exit(1);
+        const char *msg = "unexpected token";
+        error(parser, peek(parser), msg);
+        return create_expr_err(peek(parser), msg);
     }
 }
 
@@ -317,8 +368,9 @@ static struct Stmt *parse_vardecl(struct Parser* parser, struct Token start) {
     struct Token tok = advance(parser);
 
     if (tok.type != TK_IDENTIFIER) {
-        error(parser, tok, "expected identifier");
-        exit(1);
+        const char *msg = "expected identifier";
+        error(parser, tok, msg);
+        return create_stmt_err(tok, msg);
     }
     char *var_name = malloc(tok.length + 1);
     memcpy(var_name, parser->lexer->source + tok.offest, tok.length);
@@ -326,16 +378,18 @@ static struct Stmt *parse_vardecl(struct Parser* parser, struct Token start) {
 
     // force type annotation
     if (peek(parser).type != TK_COLON) {
-        error(parser, peek(parser), "expected explicit type annotation");
-        exit(1);
+        const char *msg = "expected explicit type annotation";
+        error(parser, peek(parser), msg); 
+        return create_stmt_err(peek(parser), msg);
     }
 
     // consume ':'
     advance(parser);
 
     if (!is_var_type(peek(parser).type)) {
-        error(parser, peek(parser), "expected type after ':'");
-        exit(1);
+        const char *msg = "expected type after ':'";
+        error(parser, peek(parser), msg);
+        return create_stmt_err(peek(parser), msg);
     }
 
     struct Token tok1 = advance(parser);
@@ -345,16 +399,18 @@ static struct Stmt *parse_vardecl(struct Parser* parser, struct Token start) {
     if (type == TK_INT) {
         var_type = TYPE_INT;
     } else {
-        error(parser, tok, "unexpected tokentype: %d", type);
-        exit(1);
+        const char *msg = "unexpected tokentype";
+        error(parser, tok, "%s: %d", msg, type);
+        return create_stmt_err(tok, msg);
     }
 
     if (peek(parser).type == TK_EQUAL) {
         advance(parser);
         struct Expr *expr = parse_expression(parser);
         if (peek(parser).type != TK_SEMICOLON) {
-            error(parser, peek(parser), "expected ';'");
-            exit(1);
+            const char *msg = "expected ';'";
+            error(parser, peek(parser), msg);
+            return create_stmt_err(peek(parser), msg);
         }
         advance(parser);
         return create_vardecl(var_name, var_type, expr, start);
